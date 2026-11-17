@@ -7,16 +7,13 @@
 // (default: sibling checkout). Node provides SharedArrayBuffer.
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import { createRequire } from 'node:module'
+import { loadShielded } from '../dist/src/index.cjs'
 
-const require = createRequire(import.meta.url)
 const DPP_DIR = process.env.DPP_DIR
   ?? path.resolve(process.cwd(), '../pshenmic-dpp-new-ark/pshenmic-dpp')
 
 const dpp = await import(path.join(DPP_DIR, 'dist/src/wasm.js'))
-require('../dist/src/index.cjs') // register orchard's loader on the global symbol
-
-await dpp.initShielded()
+dpp.setShielded(loadShielded())
 
 const seed = new Uint8Array(64)
 for (let i = 0; i < 64; i++) seed[i] = (i * 7 + 1) & 0xff

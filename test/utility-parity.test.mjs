@@ -14,13 +14,9 @@
 // fromBigIntString/isBigInt. Run on the rebuilt orchard wasm, no dpp required:
 //   node test/utility-parity.test.mjs
 import assert from 'node:assert/strict'
-import { createRequire } from 'node:module'
+import { loadShielded } from '../dist/src/index.cjs'
 
-const require = createRequire(import.meta.url)
-const KEY = Symbol.for('pshenmic-dpp.shielded')
-delete globalThis[KEY]
-require('../dist/src/index.cjs')
-const shielded = globalThis[KEY].loadShielded()
+const shielded = loadShielded()
 
 const DV = shielded.DynamicValue
 assert.ok(DV, 'orchard must expose the ported DynamicValue napi class')

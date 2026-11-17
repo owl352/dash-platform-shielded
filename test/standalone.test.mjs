@@ -1,26 +1,20 @@
 // Standalone orchard test — no pshenmic-dpp required.
-// Verifies: importing orchard registers the loader on the global symbol, and
-// loadShielded() instantiates the threaded proving wasm (proving classes present,
-// idempotent). Run: node test/standalone.test.mjs  (Node provides SharedArrayBuffer).
+// Verifies: orchard exports loadShielded(), which instantiates the proving module
+// (native Node-API addon on Node, threaded wasm fallback; proving classes present,
+// idempotent). Run: node test/standalone.test.mjs
 import assert from 'node:assert/strict'
-import { createRequire } from 'node:module'
+import { loadShielded } from '../dist/src/index.cjs'
 
-const require = createRequire(import.meta.url)
-const KEY = Symbol.for('pshenmic-dpp.shielded')
+assert.equal(typeof loadShielded, 'function', 'orchard must export loadShielded')
 
-delete globalThis[KEY]
-require('../dist/src/index.cjs')
-
-assert.equal(typeof globalThis[KEY]?.loadShielded, 'function', 'orchard must register loadShielded')
-
-const shielded = globalThis[KEY].loadShielded()
+const shielded = loadShielded()
 assert.ok(shielded.ShieldedBuilderNAPI, 'ShieldedBuilderNAPI must be present')
 assert.ok(shielded.OrchardProverNAPI, 'OrchardProverNAPI must be present')
 assert.ok(shielded.OrchardAddressNAPI, 'OrchardAddressNAPI must be present')
-assert.equal(globalThis[KEY].loadShielded(), shielded, 'loadShielded must be idempotent')
+assert.equal(loadShielded(), shielded, 'loadShielded must be idempotent')
 
-// Real proving-key build (~seconds) proves the wasm actually runs, not just loads.
+// Real proving-key build (~seconds) proves the module actually runs, not just loads.
 const prover = await shielded.OrchardProverNAPI.init()
 assert.ok(prover, 'OrchardProverNAPI.init() must resolve')
 
-console.log('STANDALONE_OK: registration + shielded wasm instantiation + proving key build')
+console.log('STANDALONE_OK: loadShielded export + proving module instantiation + proving key build')

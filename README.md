@@ -7,23 +7,21 @@ isolation**; proving is opt-in.
 
 ## How it plugs in
 
-Importing this package once registers its loader on a cross-realm global symbol:
+This package exports `loadShielded()`, which returns the proving module instance
+(native Node-API addon on Node, threaded wasm elsewhere). The consumer hands it to
+`pshenmic-dpp` explicitly with `setShielded()`:
 
 ```js
-globalThis[Symbol.for('pshenmic-dpp.shielded')] = { loadShielded }
-```
+import { loadShielded } from 'pshenmic-orchard'
+import { setShielded, ShieldedBuilderWASM } from 'pshenmic-dpp'
 
-`pshenmic-dpp`'s `initShielded()` discovers it **by symbol, not by module name**,
-so it survives bundler renaming and duplicate dpp copies. Consumer usage:
-
-```js
-import 'pshenmic-orchard'              // register (once, anywhere)
-import { initShielded, ShieldedBuilderWASM } from 'pshenmic-dpp'
-
-await initShielded()                   // needs SharedArrayBuffer (COOP/COEP in browsers)
+setShielded(loadShielded())            // wasm path needs SharedArrayBuffer (COOP/COEP)
 const builder = new ShieldedBuilderWASM()
 await builder.init()
 ```
+
+Both imports are **static**, so this survives bundler renaming. There is no global
+registry — the consumer wires the two packages together explicitly.
 
 The base ↔ proving boundary is **bytes**: dpp base classes are serialized into
 the orchard builder (separate napi instances never share wrapped napi objects).
@@ -100,7 +98,7 @@ Two levels (plain Node scripts — Node provides `SharedArrayBuffer`):
 
 ```sh
 npm test                 # standalone: registration + wasm instantiation + proving-key build (no dpp)
-npm run test:integration # dpp + orchard: initShielded + a REAL shielded transition across the boundary
+npm run test:integration # dpp + orchard: setShielded(loadShielded()) + a REAL shielded transition across the boundary
 ```
 
 `test:integration` needs a **built** pshenmic-dpp (`dist/` with the base wasm);
