@@ -1,7 +1,7 @@
 {
   "name": "pshenmic-orchard",
   "version": "0.0.0",
-  "description": "Orchard/Halo 2 shielded proving engine for pshenmic-dpp (optional; loaded via initShielded)",
+  "description": "Orchard/Halo 2 shielded proving engine for pshenmic-dpp (optional; loaded via setShielded(loadShielded()))",
   "type": "commonjs",
   "main": "dist/src/index.cjs",
   "types": "dist/src/index.d.ts",

@@ -21,7 +21,7 @@ const toHex = (b) => Array.from(b).map((x) => x.toString(16).padStart(2, '0')).j
 
 const builder = new dpp.ShieldedBuilderWASM()
 await builder.init()
-const recipient = dpp.OrchardAddressWASM.fromSeed(seed, 1, 0)
+const recipient = dpp.ShieldedAddressWASM.fromSeed(seed, 1, 0)
 const privateKey = dpp.PrivateKeyWASM.fromWIF('cUy4wbim4y9NDwC24omx8oWY5WqfmjSU2gdcZtTXza2xDCAkQXRP')
 const outPoint = new dpp.OutPointWASM('79af4b339ddfee8c9b6d08d74155373c6ef547cda5e65473a254b9b0f8533f0c', 0)
 const assetLockProof = dpp.AssetLockProofWASM.createChainAssetLockProof(1499737, outPoint)

@@ -9,12 +9,12 @@ assert.equal(typeof loadShielded, 'function', 'orchard must export loadShielded'
 
 const shielded = loadShielded()
 assert.ok(shielded.ShieldedBuilderNAPI, 'ShieldedBuilderNAPI must be present')
-assert.ok(shielded.OrchardProverNAPI, 'OrchardProverNAPI must be present')
-assert.ok(shielded.OrchardAddressNAPI, 'OrchardAddressNAPI must be present')
+assert.ok(shielded.ShieldedProverNAPI, 'ShieldedProverNAPI must be present')
+assert.ok(shielded.ShieldedAddressNAPI, 'ShieldedAddressNAPI must be present')
 assert.equal(loadShielded(), shielded, 'loadShielded must be idempotent')
 
 // Real proving-key build (~seconds) proves the module actually runs, not just loads.
-const prover = await shielded.OrchardProverNAPI.init()
-assert.ok(prover, 'OrchardProverNAPI.init() must resolve')
+const prover = await shielded.ShieldedProverNAPI.init()
+assert.ok(prover, 'ShieldedProverNAPI.init() must resolve')
 
 console.log('STANDALONE_OK: loadShielded export + proving module instantiation + proving key build')

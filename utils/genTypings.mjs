@@ -1,5 +1,5 @@
 // Generates the orchard napi TypeScript declarations (the proving NAPI surface:
-// ShieldedBuilderNAPI, OrchardProverNAPI, ...). pshenmic-dpp's Orchard JS
+// ShieldedBuilderNAPI, ShieldedProverNAPI, ...). pshenmic-dpp's shielded JS
 // wrappers import these types from 'pshenmic-orchard/bindingsTypes' so they can
 // type-check against the proving module they delegate to at runtime, without
 // dpp itself compiling any proving code.

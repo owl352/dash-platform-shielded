@@ -24,7 +24,7 @@ Both imports are **static**, so this survives bundler renaming. There is no glob
 registry — the consumer wires the two packages together explicitly.
 
 The base ↔ proving boundary is **bytes**: dpp base classes are serialized into
-the orchard builder (separate napi instances never share wrapped napi objects).
+the shielded builder (separate napi instances never share wrapped napi objects).
 On Node, `loadShielded()` prefers the native Node-API addon (~3x faster proving);
 in browsers — or when the addon is unavailable for the platform — it loads the
 threaded wasm, which needs cross-origin isolation (SharedArrayBuffer).
@@ -50,7 +50,7 @@ src/            Rust crate source (pure Rust)
   enums/scope.rs
   lib.rs        #![no_main] pub mod orchard/enums
 js/             JS source (copied to dist/, mirroring pshenmic-dpp's layout)
-  src/          registration API: index.cjs (+ index.d.ts) -> dist/src/
+  src/          entry API: index.cjs (+ index.d.ts) -> dist/src/
   binaries/     napi glue: loader.cjs (loadShielded), memory.cjs (shared memory),
                 base122.cjs (decoder) -> dist/binaries/
 utils/          imported build helpers: convertBinary, buildWorkerBundle, base122,
@@ -97,7 +97,7 @@ regenerates `dist/binaries/bindingsTypes.d.ts`.
 Two levels (plain Node scripts — Node provides `SharedArrayBuffer`):
 
 ```sh
-npm test                 # standalone: registration + wasm instantiation + proving-key build (no dpp)
+npm test                 # standalone: loadShielded export + wasm instantiation + proving-key build (no dpp)
 npm run test:integration # dpp + orchard: setShielded(loadShielded()) + a REAL shielded transition across the boundary
 ```
 
@@ -106,21 +106,21 @@ point `DPP_DIR` at it (default: sibling checkout). It asserts deterministic
 transition fields + byte round-trips (proofs are OsRng-randomized, so literal
 proof bytes are never compared).
 
-Testing strategy for the split: test **each side strictly** — orchard standalone
-(real proving), dpp base + its JS layer (the JS wrappers can be exercised against
-a **mock** orchard loader registered on the symbol, no real proving needed) —
+Testing strategy for the split: test **each side strictly** — the shielded module
+standalone (real proving), dpp base + its JS layer (the JS wrappers can be exercised against
+a **mock** shielded module passed to `setShielded()`, no real proving needed) —
 plus this cross-repo integration test. In browsers, proving additionally needs
 cross-origin isolation (`COOP: same-origin` + `COEP: require-corp`); the dpp e2e
 harness covers the COOP/popup matrix.
 
 ## Notes
 
-- **Version alignment:** the bytes boundary couples dpp and orchard — release
-  them with matching versions and matching `@emnapi` pins (currently `1.11.3`).
-  The `version` here is a placeholder (`0.0.0`); set it at release.
-- **Wasm size:** the orchard wasm links the dpp base napi helpers (it uses them
+- **Version alignment:** the bytes boundary couples dpp and pshenmic-orchard —
+  release them with matching versions and matching `@emnapi` pins (currently
+  `1.11.3`). The `version` here is a placeholder (`0.0.0`); set it at release.
+- **Wasm size:** the shielded wasm links the dpp base napi helpers (it uses them
   for serialization), so it is ~8MB (currently 7.99MB — tight headroom under
-  Chrome's limit). The *base* dpp wasm is the small one. Watch the orchard size
+  Chrome's limit). The *base* dpp wasm is the small one. Watch the shielded size
   budget; a future step could gate dpp's napi registration to shrink it.
 - `binaries/`, `dist/`, `target/` are build outputs (gitignored); CI builds them
   before publishing. Do not publish from a stale local `dist/`.

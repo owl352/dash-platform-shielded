@@ -7,7 +7,7 @@ use napi_derive::napi;
 
 use crate::orchard::{
     napi_utils::{BigIntString, TryToU64},
-    orchard_address::OrchardAddressNAPI,
+    orchard_address::ShieldedAddressNAPI,
     serialize,
 };
 
@@ -40,7 +40,7 @@ impl ShieldedOutputNAPI {
     /// recovered from this (shielded) instance's per-Env wrap map.
     #[napi(constructor)]
     pub fn new(
-        js_address: &OrchardAddressNAPI,
+        js_address: &ShieldedAddressNAPI,
         js_amount: BigIntString,
         js_memo: Uint8Array,
     ) -> Result<Self, napi::Error> {
@@ -52,12 +52,12 @@ impl ShieldedOutputNAPI {
     }
 
     #[napi(getter, js_name = "address")]
-    pub fn address(&self) -> OrchardAddressNAPI {
+    pub fn address(&self) -> ShieldedAddressNAPI {
         self.address.into()
     }
 
     #[napi(setter, js_name = "address")]
-    pub fn set_address(&mut self, js_address: &OrchardAddressNAPI) {
+    pub fn set_address(&mut self, js_address: &ShieldedAddressNAPI) {
         self.address = js_address.into();
     }
 
