@@ -1,0 +1,65 @@
+name: Build & Test
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    name: Build
+    uses: ./.github/workflows/build-dist.yml
+    with:
+      # Only the targets the test matrix runs on; publish.yml builds them all.
+      native-groups: >-
+        [
+          {"name": "darwin", "targets": "aarch64-apple-darwin", "os": "macos-latest"},
+          {"name": "linux", "targets": "x86_64-unknown-linux-gnu", "os": "ubuntu-latest"},
+          {"name": "windows", "targets": "x86_64-pc-windows-msvc", "os": "ubuntu-latest"}
+        ]
+
+  test:
+    name: Test ${{ matrix.settings.target }} (Node ${{ matrix.node-version }})
+    needs: build
+    runs-on: ${{ matrix.settings.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22.x, 24.x]
+        settings:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Setup QEMU
+        if: runner.os == 'Linux' && contains(matrix.settings.target, 'aarch64')
+        uses: docker/setup-qemu-action@v4
+
+      - name: Install project dependencies
+        run: yarn install
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: build-artifact-dist
+          path: ./dist
+
+      # Orchard-only suites (no pshenmic-dpp needed): registration + a real
+      # proving-key build (native addon preferred, wasm fallback) + the ported
+      # DynamicValue surface parity. The cross-repo integration test runs in
+      # pshenmic-dpp's CI, which has orchard as a dependency.
+      - name: Run tests
+        run: yarn test

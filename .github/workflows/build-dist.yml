@@ -1,0 +1,223 @@
+name: Build dist
+
+# Builds the package in parallel jobs (threaded wasm + typings, one job per
+# native target group), then assembles ./dist from their outputs and uploads it
+# as the `build-artifact-dist` artifact. Mirrors pshenmic-dpp's build-dist.yml;
+# orchard ships native Node-API addons (preferred on Node) + a threaded wasm
+# module (browser / fallback), no React Native bins.
+
+on:
+  workflow_call:
+    inputs:
+      native-groups:
+        description: 'JSON array of {"name", "targets", "os"}: one build job per entry on runner "os", targets comma-separated'
+        required: true
+        type: string
+
+jobs:
+  wasm:
+    name: Build wasm + typings
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+
+      # The threaded wasm (wasm32-wasip1-threads) rebuilds std with atomics
+      # (-Z build-std) for the Orchard/Halo 2 proving stack: nightly + rust-src.
+      # Pinned for reproducible, flag-stable artifacts. Must stay on a 1.99
+      # nightly: from 1.100 rustc links crt1-reactor.o itself, colliding with
+      # napi-build 2.3's copy (duplicate `_initialize`). Installed FIRST so the
+      # stable step below stays the rustup default (the typings host build).
+      - name: Setup Rust nightly (wasm build-std)
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2026-08-15
+          targets: wasm32-wasip1-threads
+          components: rust-src
+
+      # Stable is the rustup default for the napi typings host build
+      # (utils/genTypings.mjs). Pinned (no floating `+stable`: 1.100+ would hit
+      # the same duplicate `_initialize` issue if it ever built the wasm target).
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@1.99
+
+      - name: Cache Rust dependencies
+        uses: swatinem/rust-cache@v2
+        with:
+          key: wasm
+
+      - name: Install wasm-opt
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-opt
+
+      # The C dependencies (secp256k1-sys, blst) need clang for wasm32 and
+      # llvm-ar to archive them (GNU ar can't index wasm objects); llvm-ar is
+      # also required by the emnapi link archive.
+      - name: Install LLVM for WebAssembly
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang llvm
+
+      - name: Install project dependencies
+        run: yarn install --immutable
+
+      # Builds the threaded wasm (wasm32-wasip1-threads, nightly, build-std)
+      # plus the napi typings (host build).
+      - name: Build wasm and typings
+        run: node build.cjs
+        env:
+          BUILD_STEPS: wasm,typings
+          WASM_TOOLCHAIN: nightly-2026-08-15
+          # Without a sysroot clang falls back to the host's glibc headers in
+          # /usr/include, which break the wasm C builds ('bits/libc-header-start.h'
+          # not found). An empty one leaves just clang's builtin headers.
+          CFLAGS_wasm32_wasip1_threads: --sysroot=/nonexistent
+
+      - name: Upload wasm and typings
+        uses: actions/upload-artifact@v7
+        with:
+          name: bin-wasm
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            dist/binaries/wasm
+            dist/binaries/bindingsTypes.d.ts
+
+  native:
+    name: Build native (${{ matrix.group.name }})
+    runs-on: ${{ matrix.group.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        group: ${{ fromJSON(inputs.native-groups) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+
+      - name: Install Zig
+        if: matrix.group.name == 'linux'
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.13.0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@1.99
+        with:
+          targets: ${{ matrix.group.targets }}
+
+      - name: Cache Rust dependencies
+        uses: swatinem/rust-cache@v2
+        with:
+          key: native-${{ matrix.group.name }}
+
+      # The Microsoft CRT/SDK headers cargo-xwin downloads for the windows-msvc
+      # targets are ~1GB and are not covered by rust-cache.
+      - name: Cache xwin CRT/SDK
+        if: matrix.group.name == 'windows'
+        uses: actions/cache@v6
+        with:
+          path: ${{ runner.os == 'macOS' && '~/Library/Caches/cargo-xwin' || '~/.cache/cargo-xwin' }}
+          key: ${{ runner.os }}-cargo-xwin
+
+      - name: Install pre-built Rust tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild, cargo-xwin
+
+      # cargo-xwin needs clang-cl from LLVM (macOS).
+      - name: Install LLVM (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install llvm
+          echo "$(brew --prefix llvm)/bin" >> $GITHUB_PATH
+
+      # cargo-xwin drives clang-cl, lld-link and llvm-lib. clang and lld pick
+      # their MSVC-compatible mode from the name they're invoked by.
+      - name: Install LLVM for cargo-xwin (Linux)
+        if: runner.os == 'Linux' && matrix.group.name == 'windows'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang lld llvm
+          sudo ln -sf "$(command -v clang)" /usr/local/bin/clang-cl
+          sudo ln -sf "$(command -v ld.lld)" /usr/local/bin/lld-link
+          clang-cl --version
+          lld-link --version
+          llvm-lib --help > /dev/null
+
+      - name: Install project dependencies
+        run: yarn install --immutable
+
+      - name: Build native binaries
+        run: node build.cjs
+        env:
+          BUILD_STEPS: native
+          NATIVE_BUILD_TARGET: ${{ matrix.group.targets }}
+          RUSTFLAGS: '-C target-feature=-crt-static'
+          # Accepts Microsoft's license for the CRT/SDK headers cargo-xwin downloads.
+          XWIN_ACCEPT_LICENSE: '1'
+
+      - name: Upload native binaries
+        uses: actions/upload-artifact@v7
+        with:
+          name: bin-native-${{ matrix.group.name }}
+          retention-days: 1
+          if-no-files-found: error
+          path: dist/binaries/native
+
+  assemble:
+    name: Assemble dist
+    needs: [wasm, native]
+    if: >-
+      !cancelled()
+      && needs.wasm.result == 'success'
+      && needs.native.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+
+      - name: Install project dependencies
+        run: yarn install --immutable
+
+      - name: Download wasm and typings
+        uses: actions/download-artifact@v8
+        with:
+          name: bin-wasm
+          path: dist/binaries
+
+      - name: Download native binaries
+        uses: actions/download-artifact@v8
+        with:
+          pattern: bin-native-*
+          merge-multiple: true
+          path: dist/binaries/native
+
+      # Copies js/ -> dist/ (src API + binaries napi glue) around the downloaded
+      # wasm/native/typings outputs.
+      - name: Bundle dist
+        run: node build.cjs
+        env:
+          BUILD_STEPS: bundle
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-artifact-dist
+          retention-days: 1
+          path: ./dist

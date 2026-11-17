@@ -1,0 +1,114 @@
+[package]
+name = "pshenmic-orchard"
+authors = ["owl352 <kokosinca123@gmail.com>"]
+version = "0.0.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+dpp = { git = "https://github.com/dashpay/platform", tag = "v5.0.0-rc.8", default-features = false, features = [
+    "identity-value-conversion",
+    "identity-serialization",
+    "state-transition-signing",
+    "platform-value",
+    "document-json-conversion",
+    "data-contract-json-conversion",
+    "shielded-client"
+] }
+grovedb-commitment-tree = { git = "https://github.com/dashpay/grovedb", rev = "2128ea18f9b1c2f9502f99967b1b1c6485c91f8b", features = ["client"] }
+indexmap = "2.0.2"
+zip32 = "=0.2.1"
+indexmap1 = { package = "indexmap", version = "=1.9.3", features = ["std"] }
+napi = { version = "=3.11.0", features = ["napi3", "async"], default-features = false }
+napi-derive = "=3.6.0"
+rand = "0.8.5"
+serde = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }
+hex = "0.4.3"
+sha2 = "0.10.8"
+async-trait = "0.1"
+
+[build-dependencies]
+napi-build = "~2.3.1"
+napi-derive-backend = "=6.0.0"
+
+[profile.release]
+lto = "fat"
+opt-level = 3
+strip = "symbols"
+codegen-units = 1
+panic = "abort"
+incremental = false
+debug = false
+
+[profile.release-wasm]
+inherits = "release"
+opt-level = "z"
+
+[profile.release-wasm.package.pshenmic-orchard]
+opt-level = "s"
+
+[profile.release-wasm.package.halo2_proofs]
+opt-level = 3
+
+[profile.release-wasm.package.halo2_gadgets]
+opt-level = 3
+
+[profile.release-wasm.package.halo2_poseidon]
+opt-level = 3
+
+[profile.release-wasm.package.orchard]
+opt-level = 3
+
+[profile.release-wasm.package.pasta_curves]
+opt-level = 3
+
+[profile.release-wasm.package.ff]
+opt-level = 3
+
+[profile.release-wasm.package.group]
+opt-level = 3
+
+[profile.release-wasm.package.sinsemilla]
+opt-level = 3
+
+[profile.release-wasm.package.reddsa]
+opt-level = 3
+
+[profile.release-wasm.package.blake2b_simd]
+opt-level = 3
+
+[profile.release-wasm.package.rayon]
+opt-level = 3
+
+[profile.release-wasm.package."rayon-core"]
+opt-level = 3
+
+[profile.release-wasm.package.subtle]
+opt-level = 3
+
+[profile.release-wasm.package.bitvec]
+opt-level = 3
+
+[profile.release-wasm.package.incrementalmerkletree]
+opt-level = 3
+
+[profile.release-wasm.package.zcash_note_encryption]
+opt-level = 3
+
+[profile.release-wasm.package."grovedb-commitment-tree"]
+opt-level = 3
+
+[profile.release-wasm.package.chacha20]
+opt-level = 3
+
+[profile.release-wasm.package.chacha20poly1305]
+opt-level = 3
+
+[profile.release-wasm.package.aes]
+opt-level = 3
+
+[profile.release-wasm.package.fpe]
+opt-level = 3

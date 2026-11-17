@@ -1,0 +1,52 @@
+{
+  "name": "pshenmic-orchard",
+  "version": "0.0.0",
+  "description": "Orchard/Halo 2 shielded proving engine for pshenmic-dpp (optional; loaded via initShielded)",
+  "type": "commonjs",
+  "main": "dist/src/index.cjs",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.cjs"
+    },
+    "./bindingsTypes": {
+      "types": "./dist/binaries/bindingsTypes.d.ts"
+    }
+  },
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build": "node build.cjs",
+    "build:dist": "node -e \"require('fs').cpSync('js','dist',{recursive:true})\"",
+    "build:typings": "node utils/genTypings.mjs",
+    "test": "node test/standalone.test.mjs && node test/utility-parity.test.mjs",
+    "test:integration": "node test/integration.test.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/owl352/pshenmic-orchard.git"
+  },
+  "author": "owl352",
+  "license": "ISC",
+  "dependencies": {
+    "@emnapi/core": "1.11.3",
+    "@emnapi/runtime": "1.11.3",
+    "@tybys/wasm-util": "^0.10.1",
+    "fflate": "^0.8.3"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^3.0.4",
+    "emnapi": "1.11.3",
+    "wasm-opt": "^1.4.0"
+  },
+  "peerDependencies": {
+    "pshenmic-dpp": "*"
+  },
+  "peerDependenciesMeta": {
+    "pshenmic-dpp": {
+      "optional": true
+    }
+  }
+}
