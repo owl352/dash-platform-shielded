@@ -26,7 +26,7 @@
 // must match). It tests EXISTING dpp behavior, so it passes by design.
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import '../dist/src/index.cjs' // register orchard's loader on the global symbol
+import { loadShielded } from '../dist/src/index.cjs'
 
 const DPP_DIR = process.env.DPP_DIR
   ?? path.resolve(process.cwd(), '../pshenmic-dpp-new-ark/pshenmic-dpp')
@@ -52,7 +52,7 @@ assert.equal(memo.toBytes().length, 36, 'ShieldedMemo is 36 bytes')
 assert.throws(() => dpp.ShieldedMemoWASM.fromBytes(new Uint8Array(10)), /36/)
 
 // StateTransition: serialize/deserialize round-trip (the critical return value).
-await dpp.initShielded()
+dpp.setShielded(loadShielded())
 const builder = new dpp.ShieldedBuilderWASM()
 await builder.init()
 const recipient = dpp.OrchardAddressWASM.fromSeed(SEED, 1, 0)

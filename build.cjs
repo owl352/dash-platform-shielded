@@ -8,7 +8,7 @@
 // jobs and assemble the package afterwards. Default: everything.
 //   wasm     threaded wasm (wasm32-wasip1-threads, nightly) -> binaries/wasm/
 //              shieldedBytes.cjs + workerBundle.cjs. Sync-compiled at
-//              initShielded(); MUST stay < 8MB (Chrome sync-compile limit).
+//              loadShielded(); MUST stay < 8MB (Chrome sync-compile limit).
 //   native   NATIVE_BUILD_TARGET addons -> binaries/native/<target>/*.node
 //   typings  napi typings (host build) -> binaries/bindingsTypes.d.ts
 //   bundle   copy js/ -> dist/ (src API + binaries napi glue)
@@ -35,7 +35,7 @@ const WASM_TOOLCHAIN = process.env.WASM_TOOLCHAIN ?? "nightly-2026-08-15";
 const WASM_PROFILE = isRelease ? "release-wasm" : buildProfile;
 const BIN_NAME = "pshenmic_orchard";
 // Chrome refuses to sync-compile wasm > 8MB on the main thread; the shielded
-// module is sync-compiled at initShielded(), so the limit applies here too.
+// module is sync-compiled at loadShielded(), so the limit applies here too.
 const CHROME_SYNC_COMPILE_LIMIT = 8 * 1024 * 1024;
 
 const distDir = path.join(ROOT, "dist");

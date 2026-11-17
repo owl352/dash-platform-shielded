@@ -1,10 +1,9 @@
 // SHIELDED (threaded) wasm creation — the Orchard/Halo 2 proving module.
-// Loaded ON DEMAND via loadShielded() (pshenmic-dpp initShielded() discovers it
-// through the global symbol registered by index.cjs): it needs shared memory
-// (SharedArrayBuffer / cross-origin isolation in browsers) and wasm thread
-// workers, so nothing here may run at import time. Requiring this file only
-// sets up the worker branch; the bytes are decoded, compiled and instantiated
-// inside loadShielded().
+// Loaded ON DEMAND via loadShielded(), which the consumer passes to pshenmic-dpp
+// via setShielded(). The wasm path needs shared memory (SharedArrayBuffer /
+// cross-origin isolation in browsers) and wasm thread workers, so nothing here
+// may run at import time. Requiring this file only sets up the worker branch;
+// the bytes are decoded, compiled and instantiated inside loadShielded().
 const { WASI } = require('@tybys/wasm-util');
 const { getDefaultContext } = require('@emnapi/runtime');
 const { instantiateNapiModuleSync, MessageHandler } = require('@emnapi/core');
@@ -120,7 +119,7 @@ if (isWorker) {
 
   // Returns the proving module's napi exports — the native addon on Node when
   // available, else the threaded wasm instance. Idempotent: a second call
-  // returns the same instance (initShielded() also caches its promise).
+  // returns the same instance (the consumer caches it via setShielded).
   function loadShielded() {
     if (shieldedExports !== undefined) {
       return shieldedExports;
@@ -133,6 +132,17 @@ if (isWorker) {
         shieldedExports.default = native;
         return shieldedExports;
       }
+    }
+
+    // The threaded wasm needs shared memory. Browsers only expose
+    // SharedArrayBuffer under cross-origin isolation (COOP/COEP); Node provides
+    // it by default (and uses the native addon above instead).
+    if (typeof SharedArrayBuffer === 'undefined') {
+      throw new Error(
+        'Shielded proving requires SharedArrayBuffer, which is not available in this environment. ' +
+        'Browsers only expose it under cross-origin isolation (serve the page with COOP/COEP headers); ' +
+        'Node.js provides it by default.'
+      );
     }
 
     const { bytes } = require('./wasm/shieldedBytes.cjs');
