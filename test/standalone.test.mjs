@@ -8,12 +8,12 @@ import shielded from '../dist/src/index.cjs'
 import { loadShielded } from '../dist/src/lazy.cjs'
 
 assert.ok(shielded.ShieldedBuilderNAPI, 'ShieldedBuilderNAPI must be present')
-assert.ok(shielded.ShieldedProverNAPI, 'ShieldedProverNAPI must be present')
-assert.ok(shielded.ShieldedAddressNAPI, 'ShieldedAddressNAPI must be present')
+assert.ok(shielded.OrchardProverNAPI, 'OrchardProverNAPI must be present')
+assert.ok(shielded.OrchardAddressNAPI, 'OrchardAddressNAPI must be present')
 assert.equal(loadShielded(), shielded, 'lazy loader must return the same cached instance')
 
 // Real proving-key build (~seconds) proves the module actually runs, not just loads.
-const prover = await shielded.ShieldedProverNAPI.init()
-assert.ok(prover, 'ShieldedProverNAPI.init() must resolve')
+const prover = await shielded.OrchardProverNAPI.init()
+assert.ok(prover, 'OrchardProverNAPI.init() must resolve')
 
 console.log('STANDALONE_OK: eager entry + lazy loader + proving key build')
