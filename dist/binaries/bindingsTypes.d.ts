@@ -101,12 +101,12 @@ export declare class FullViewingKeyNAPI {
    * The payment address at `diversifier_index` (default 0) for the given
    * scope (default `External`).
    */
-  address(diversifierIndex?: number | undefined | null, jsScope?: DynamicValue | undefined | null): ShieldedAddressNAPI
+  address(diversifierIndex?: number | undefined | null, jsScope?: DynamicValue | undefined | null): OrchardAddressNAPI
   /**
    * The scope this address was derived under, or `null` if it does not
    * belong to this key.
    */
-  scopeForAddress(jsAddress: ShieldedAddressNAPI): string | null
+  scopeForAddress(jsAddress: OrchardAddressNAPI): string | null
 }
 
 /**
@@ -136,12 +136,12 @@ export declare class IncomingViewingKeyNAPI {
    * The payment address at `diversifier_index` (default 0). The scope is
    * fixed by the key itself.
    */
-  address(diversifierIndex?: number | undefined | null): ShieldedAddressNAPI
+  address(diversifierIndex?: number | undefined | null): OrchardAddressNAPI
   /**
    * The diversifier index `address` was derived at, or `null` if the address
    * was not derived from this key.
    */
-  diversifierIndex(jsAddress: ShieldedAddressNAPI): number | null
+  diversifierIndex(jsAddress: OrchardAddressNAPI): number | null
 }
 
 /**
@@ -161,8 +161,8 @@ export declare class MerklePathNAPI {
  * owner address, value, `rho`, and `rseed`.
  */
 export declare class NoteNAPI {
-  constructor(jsAddress: ShieldedAddressNAPI, jsValue: BigIntString, jsRho: Uint8Array, jsRseed: Uint8Array)
-  get address(): ShieldedAddressNAPI
+  constructor(jsAddress: OrchardAddressNAPI, jsValue: BigIntString, jsRho: Uint8Array, jsRseed: Uint8Array)
+  get address(): OrchardAddressNAPI
   get value(): BigIntString
   get rho(): Uint8Array
   get rseed(): Uint8Array
@@ -172,10 +172,38 @@ export declare class NoteNAPI {
    * `CommitmentTreeNAPI` to later produce the note's spend witness.
    */
   get cmx(): Uint8Array
-  set address(jsAddress: ShieldedAddressNAPI)
+  set address(jsAddress: OrchardAddressNAPI)
   set value(jsValue: BigIntString)
   set rho(jsRho: Uint8Array)
   set rseed(jsRseed: Uint8Array)
+}
+
+export declare class OrchardAddressNAPI {
+  static fromBech32m(bech32M: string): OrchardAddressNAPI
+  static fromBytes(bytes: Uint8Array): OrchardAddressNAPI
+  toBech32m(jsNetwork: DynamicValue): string
+  /**
+   * Derives the Orchard payment address from a BIP-39 seed via ZIP-32
+   * (`m/32'/coin_type'/account'`). `diversifier_index` selects the diversified
+   * address (default 0), `scope` the ZIP-32 scope (default `External`).
+   * `coin_type` is SLIP-44 (Dash = 5, testnets = 1).
+   */
+  static fromSeed(seed: Uint8Array, coinType: number, account: number, diversifierIndex?: number | undefined | null, jsScope?: DynamicValue | undefined | null): OrchardAddressNAPI
+  /**
+   * Derives the payment address at `diversifier_index` (default 0) from a
+   * full viewing key, for the given `scope` (default `External`).
+   */
+  static fromFullViewingKey(jsFullViewingKey: FullViewingKeyNAPI, diversifierIndex?: number | undefined | null, jsScope?: DynamicValue | undefined | null): OrchardAddressNAPI
+  /**
+   * Derives the payment address at `diversifier_index` (default 0) from an
+   * incoming viewing key. The scope is fixed by the key itself.
+   */
+  static fromIncomingViewingKey(jsIncomingViewingKey: IncomingViewingKeyNAPI, diversifierIndex?: number | undefined | null): OrchardAddressNAPI
+  bytes(): Uint8Array
+}
+
+export declare class OrchardProverNAPI {
+  static init(): Promise<OrchardProverNAPI>
 }
 
 /**
@@ -193,33 +221,9 @@ export declare class RecoveredNoteNAPI {
   get nullifier(): Uint8Array
 }
 
-export declare class ShieldedAddressNAPI {
-  static fromBech32m(bech32M: string): ShieldedAddressNAPI
-  static fromBytes(bytes: Uint8Array): ShieldedAddressNAPI
-  toBech32m(jsNetwork: DynamicValue): string
-  /**
-   * Derives the Orchard payment address from a BIP-39 seed via ZIP-32
-   * (`m/32'/coin_type'/account'`). `diversifier_index` selects the diversified
-   * address (default 0), `scope` the ZIP-32 scope (default `External`).
-   * `coin_type` is SLIP-44 (Dash = 5, testnets = 1).
-   */
-  static fromSeed(seed: Uint8Array, coinType: number, account: number, diversifierIndex?: number | undefined | null, jsScope?: DynamicValue | undefined | null): ShieldedAddressNAPI
-  /**
-   * Derives the payment address at `diversifier_index` (default 0) from a
-   * full viewing key, for the given `scope` (default `External`).
-   */
-  static fromFullViewingKey(jsFullViewingKey: FullViewingKeyNAPI, diversifierIndex?: number | undefined | null, jsScope?: DynamicValue | undefined | null): ShieldedAddressNAPI
-  /**
-   * Derives the payment address at `diversifier_index` (default 0) from an
-   * incoming viewing key. The scope is fixed by the key itself.
-   */
-  static fromIncomingViewingKey(jsIncomingViewingKey: IncomingViewingKeyNAPI, diversifierIndex?: number | undefined | null): ShieldedAddressNAPI
-  bytes(): Uint8Array
-}
-
 export declare class ShieldedBuilderNAPI {
   static init(): Promise<ShieldedBuilderNAPI>
-  shieldFromAssetLock(jsRecipient: ShieldedAddressNAPI, jsShieldAmount: BigIntString, jsAssetLockProof: Uint8Array, jsPrivateKey: Uint8Array, jsMemo: Uint8Array, jsDummyOutputs: number, jsSenderOvk?: Uint8Array | undefined | null, jsSurplusOutput?: Uint8Array | undefined | null, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
+  shieldFromAssetLock(jsRecipient: OrchardAddressNAPI, jsShieldAmount: BigIntString, jsAssetLockProof: Uint8Array, jsPrivateKey: Uint8Array, jsMemo: Uint8Array, jsDummyOutputs: number, jsSenderOvk?: Uint8Array | undefined | null, jsSurplusOutput?: Uint8Array | undefined | null, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
   /**
    * Builds a `ShieldedWithdrawal` state transition (shielded pool -> core L1).
    *
@@ -238,7 +242,7 @@ export declare class ShieldedBuilderNAPI {
    * Returns the proven state transition together with the fixed shielded fee (credits)
    * consensus charges for it.
    */
-  shieldedWithdrawal(jsSpends: Array<SpendableNoteNAPI>, jsWithdrawalAmount: BigIntString, jsOutputScript: Uint8Array, jsCoreFeePerByte: number, jsPooling: string | number, jsChangeAddress: ShieldedAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
+  shieldedWithdrawal(jsSpends: Array<SpendableNoteNAPI>, jsWithdrawalAmount: BigIntString, jsOutputScript: Uint8Array, jsCoreFeePerByte: number, jsPooling: string | number, jsChangeAddress: OrchardAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
   /**
    * Builds an `Unshield` state transition (shielded pool -> platform address).
    *
@@ -258,7 +262,7 @@ export declare class ShieldedBuilderNAPI {
    *
    * Returns the proven state transition plus the fixed shielded fee (credits).
    */
-  unshield(jsSpends: Array<SpendableNoteNAPI>, jsOutputAddress: Uint8Array, jsUnshieldAmount: BigIntString, jsChangeAddress: ShieldedAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
+  unshield(jsSpends: Array<SpendableNoteNAPI>, jsOutputAddress: Uint8Array, jsUnshieldAmount: BigIntString, jsChangeAddress: OrchardAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
   /**
    * Builds a `ShieldedTransfer` state transition (shielded pool -> shielded pool).
    *
@@ -277,7 +281,7 @@ export declare class ShieldedBuilderNAPI {
    *
    * Returns the proven state transition plus the fixed shielded fee (credits).
    */
-  shieldedTransfer(jsSpends: Array<SpendableNoteNAPI>, jsRecipient: ShieldedAddressNAPI, jsTransferAmount: BigIntString, jsChangeAddress: ShieldedAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
+  shieldedTransfer(jsSpends: Array<SpendableNoteNAPI>, jsRecipient: OrchardAddressNAPI, jsTransferAmount: BigIntString, jsChangeAddress: OrchardAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
   /**
    * Builds a `ShieldedTransfer` that pays many Orchard addresses at once
    * (shielded pool -> shielded pool).
@@ -302,7 +306,7 @@ export declare class ShieldedBuilderNAPI {
    * Errors before proving if the bundle would exceed the consensus action cap,
    * rather than after a multi-second proof the node would reject.
    */
-  shieldedTransferMulti(jsSpends: Array<SpendableNoteNAPI>, jsOutputs: Array<ShieldedOutputNAPI>, jsChangeAddress: ShieldedAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
+  shieldedTransferMulti(jsSpends: Array<SpendableNoteNAPI>, jsOutputs: Array<ShieldedOutputNAPI>, jsChangeAddress: OrchardAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
   /**
    * Builds a `Shield` state transition (transparent platform addresses -> pool).
    *
@@ -320,7 +324,7 @@ export declare class ShieldedBuilderNAPI {
    * - `sender_ovk` - optional 32-byte sender OVK (recoverable send when set)
    * - `platform_version` - protocol version (defaults to the latest)
    */
-  shield(jsRecipient: ShieldedAddressNAPI, jsShieldAmount: BigIntString, jsInputs: Array<Uint8Array>, jsPrivateKeys: Array<Uint8Array>, jsFeeStrategy: Array<Uint8Array>, jsUserFeeIncrease: number, jsMemo: Uint8Array, jsSenderOvk?: Uint8Array | undefined | null, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
+  shield(jsRecipient: OrchardAddressNAPI, jsShieldAmount: BigIntString, jsInputs: Array<Uint8Array>, jsPrivateKeys: Array<Uint8Array>, jsFeeStrategy: Array<Uint8Array>, jsUserFeeIncrease: number, jsMemo: Uint8Array, jsSenderOvk?: Uint8Array | undefined | null, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
   /**
    * Builds an `IdentityCreateFromShieldedPool` transition (pool -> new identity).
    *
@@ -339,80 +343,80 @@ export declare class ShieldedBuilderNAPI {
    * - `memo` - structured memo for the change note
    * - `platform_version` - protocol version (defaults to the latest)
    */
-  identityCreateFromShieldedPool(jsPublicKeys: Array<Uint8Array>, jsPrivateKeys: Array<Uint8Array>, jsDenomination: BigIntString, jsSendToAddressOnCreationFailure: Uint8Array, jsSpends: Array<SpendableNoteNAPI>, jsChangeAddress: ShieldedAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<IdentityCreateFromShieldedPoolResultNAPI>
+  identityCreateFromShieldedPool(jsPublicKeys: Array<Uint8Array>, jsPrivateKeys: Array<Uint8Array>, jsDenomination: BigIntString, jsSendToAddressOnCreationFailure: Uint8Array, jsSpends: Array<SpendableNoteNAPI>, jsChangeAddress: OrchardAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<IdentityCreateFromShieldedPoolResultNAPI>
   /**
    * Builds a `ShieldFromIdentity` transition (identity balance -> shielded pool), signed with
    * the identity's `signingKey` (a transfer key) and its private key.
    */
-  shieldFromIdentity(jsIdentity: Uint8Array, jsRecipient: ShieldedAddressNAPI, jsShieldAmount: BigIntString, jsNonce: BigIntString, jsSigningKey: Uint8Array, jsPrivateKey: Uint8Array, jsUserFeeIncrease: number, jsMemo: Uint8Array, jsSenderOvk?: Uint8Array | undefined | null, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
+  shieldFromIdentity(jsIdentity: Uint8Array, jsRecipient: OrchardAddressNAPI, jsShieldAmount: BigIntString, jsNonce: BigIntString, jsSigningKey: Uint8Array, jsPrivateKey: Uint8Array, jsUserFeeIncrease: number, jsMemo: Uint8Array, jsSenderOvk?: Uint8Array | undefined | null, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
   /**
    * Builds an `IdentityTopUpFromShieldedPool` transition (shielded pool -> identity balance).
    * Spends notes like `unshield`; returns the transition with its shielded fee.
    */
-  identityTopUpFromShieldedPool(jsSpends: Array<SpendableNoteNAPI>, jsIdentityId: Uint8Array, jsTopUpAmount: BigIntString, jsChangeAddress: ShieldedAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
+  identityTopUpFromShieldedPool(jsSpends: Array<SpendableNoteNAPI>, jsIdentityId: Uint8Array, jsTopUpAmount: BigIntString, jsChangeAddress: OrchardAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
   /**
    * Builds the shielded payment of a document's token cost, spent from the token's shielded
    * pool, to set as `TokenPaymentInfo.shieldedPayment` of the document transition.
    */
-  documentTokenPayment(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsDocumentId: Uint8Array, jsSpends: Array<SpendableNoteNAPI>, jsAmount: BigIntString, jsChangeAddress: ShieldedAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
+  documentTokenPayment(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsDocumentId: Uint8Array, jsSpends: Array<SpendableNoteNAPI>, jsAmount: BigIntString, jsChangeAddress: OrchardAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
   /**
    * Builds a token `Shield` batch transition (owner token balance -> token shielded pool),
    * signed with `identityPublicKey` and its private key.
    */
-  tokenShield(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsRecipient: ShieldedAddressNAPI, jsAmount: BigIntString, jsMemo: Uint8Array, jsSenderOvk: Uint8Array | undefined | null, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
+  tokenShield(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsRecipient: OrchardAddressNAPI, jsAmount: BigIntString, jsMemo: Uint8Array, jsSenderOvk: Uint8Array | undefined | null, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
   /**
    * Builds a token `Unshield` batch transition (token shielded pool -> `recipientId`'s token
    * balance), signed with `identityPublicKey` and its private key.
    */
-  tokenUnshield(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsSpends: Array<SpendableNoteNAPI>, jsRecipientId: Uint8Array, jsAmount: BigIntString, jsChangeAddress: ShieldedAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
+  tokenUnshield(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsSpends: Array<SpendableNoteNAPI>, jsRecipientId: Uint8Array, jsAmount: BigIntString, jsChangeAddress: OrchardAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
   /**
    * Builds a token `ShieldedTransfer` batch transition (token shielded pool -> token
    * shielded pool), signed with `identityPublicKey` and its private key.
    */
-  tokenShieldedTransfer(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsSpends: Array<SpendableNoteNAPI>, jsRecipient: ShieldedAddressNAPI, jsTransferAmount: BigIntString, jsChangeAddress: ShieldedAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
+  tokenShieldedTransfer(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsSpends: Array<SpendableNoteNAPI>, jsRecipient: OrchardAddressNAPI, jsTransferAmount: BigIntString, jsChangeAddress: OrchardAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
   /**
    * Builds a token `MintToPool` batch transition (new tokens minted into the token shielded
    * pool), signed with `identityPublicKey` and its private key. Pass `usingGroupInfo` for a
    * group action.
    */
-  tokenMintToPool(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsRecipient: ShieldedAddressNAPI, jsAmount: BigIntString, jsMemo: Uint8Array, jsSenderOvk: Uint8Array | undefined | null, jsPublicNote: string | undefined | null, jsUsingGroupInfo: Uint8Array | undefined | null, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
+  tokenMintToPool(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsRecipient: OrchardAddressNAPI, jsAmount: BigIntString, jsMemo: Uint8Array, jsSenderOvk: Uint8Array | undefined | null, jsPublicNote: string | undefined | null, jsUsingGroupInfo: Uint8Array | undefined | null, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
   /**
    * Builds a token `BurnFromPool` batch transition (tokens burned out of the token shielded
    * pool), signed with `identityPublicKey` and its private key. Pass `usingGroupInfo` for a
    * group action.
    */
-  tokenBurnFromPool(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsSpends: Array<SpendableNoteNAPI>, jsAmount: BigIntString, jsChangeAddress: ShieldedAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPublicNote: string | undefined | null, jsUsingGroupInfo: Uint8Array | undefined | null, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
+  tokenBurnFromPool(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsSpends: Array<SpendableNoteNAPI>, jsAmount: BigIntString, jsChangeAddress: OrchardAddressNAPI, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsAnchor: Uint8Array, jsMemo: Uint8Array, jsPublicNote: string | undefined | null, jsUsingGroupInfo: Uint8Array | undefined | null, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
   /**
    * Builds a token `ClaimToPool` batch transition (a distribution claimed into the token
    * shielded pool), signed with `identityPublicKey` and its private key.
    */
-  tokenClaimToPool(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsRecipient: ShieldedAddressNAPI, jsAmount: BigIntString, jsDistributionType: string | number, jsClaimUpTo: BigIntString | undefined | null, jsMemo: Uint8Array, jsSenderOvk: Uint8Array | undefined | null, jsPublicNote: string | undefined | null, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
+  tokenClaimToPool(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsRecipient: OrchardAddressNAPI, jsAmount: BigIntString, jsDistributionType: string | number, jsClaimUpTo: BigIntString | undefined | null, jsMemo: Uint8Array, jsSenderOvk: Uint8Array | undefined | null, jsPublicNote: string | undefined | null, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
   /**
    * Builds a token `DirectPurchaseToPool` batch transition (tokens bought at their direct
    * purchase price into the token shielded pool), signed with `identityPublicKey` and its
    * private key.
    */
-  tokenDirectPurchaseToPool(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsRecipient: ShieldedAddressNAPI, jsTokenCount: BigIntString, jsTotalAgreedPrice: BigIntString, jsMemo: Uint8Array, jsSenderOvk: Uint8Array | undefined | null, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
+  tokenDirectPurchaseToPool(jsTokenId: Uint8Array, jsOwnerId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsRecipient: OrchardAddressNAPI, jsTokenCount: BigIntString, jsTotalAgreedPrice: BigIntString, jsMemo: Uint8Array, jsSenderOvk: Uint8Array | undefined | null, jsIdentityPublicKey: Uint8Array, jsPrivateKey: Uint8Array, jsIdentityContractNonce: BigIntString, jsUserFeeIncrease: number, jsPlatformVersion?: number | undefined | null): Promise<Uint8Array>
   /**
    * Builds a `TokenShieldedTransferWithShieldedFee` transition: tokens move inside the token
    * shielded pool and the fee is paid from the credit shielded pool, so no identity signs.
    * Token and fee notes are spent with the same seed account, each against its own pool's
    * anchor. Returns the transition with its shielded fee.
    */
-  tokenShieldedTransferWithShieldedFee(jsTokenId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsTokenSpends: Array<SpendableNoteNAPI>, jsTokenChangeAddress: ShieldedAddressNAPI, jsTokenAnchor: Uint8Array, jsRecipient: ShieldedAddressNAPI, jsTransferAmount: BigIntString, jsFeeSpends: Array<SpendableNoteNAPI>, jsFeeChangeAddress: ShieldedAddressNAPI, jsFeeAnchor: Uint8Array, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
+  tokenShieldedTransferWithShieldedFee(jsTokenId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsTokenSpends: Array<SpendableNoteNAPI>, jsTokenChangeAddress: OrchardAddressNAPI, jsTokenAnchor: Uint8Array, jsRecipient: OrchardAddressNAPI, jsTransferAmount: BigIntString, jsFeeSpends: Array<SpendableNoteNAPI>, jsFeeChangeAddress: OrchardAddressNAPI, jsFeeAnchor: Uint8Array, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
   /**
    * Builds a `TokenUnshieldWithShieldedFee` transition: tokens leave the token shielded pool
    * for `recipientId`'s balance and the fee is paid from the credit shielded pool. Returns
    * the transition with its shielded fee.
    */
-  tokenUnshieldWithShieldedFee(jsTokenId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsTokenSpends: Array<SpendableNoteNAPI>, jsTokenChangeAddress: ShieldedAddressNAPI, jsTokenAnchor: Uint8Array, jsRecipientId: Uint8Array, jsAmount: BigIntString, jsFeeSpends: Array<SpendableNoteNAPI>, jsFeeChangeAddress: ShieldedAddressNAPI, jsFeeAnchor: Uint8Array, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
+  tokenUnshieldWithShieldedFee(jsTokenId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsTokenSpends: Array<SpendableNoteNAPI>, jsTokenChangeAddress: OrchardAddressNAPI, jsTokenAnchor: Uint8Array, jsRecipientId: Uint8Array, jsAmount: BigIntString, jsFeeSpends: Array<SpendableNoteNAPI>, jsFeeChangeAddress: OrchardAddressNAPI, jsFeeAnchor: Uint8Array, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
   /**
    * Builds a `TokenPurchaseFromShieldedPool` transition: tokens are bought at their direct
    * purchase price into the token shielded pool, paid (price and fee) from the credit
    * shielded pool. `recipient` must belong to the seed account. Returns the transition with
    * its shielded fee.
    */
-  tokenPurchaseFromShieldedPool(jsTokenId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsRecipient: ShieldedAddressNAPI, jsTokenCount: BigIntString, jsTotalAgreedPrice: BigIntString, jsFeeSpends: Array<SpendableNoteNAPI>, jsFeeChangeAddress: ShieldedAddressNAPI, jsFeeAnchor: Uint8Array, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
+  tokenPurchaseFromShieldedPool(jsTokenId: Uint8Array, jsDataContractId: Uint8Array, jsTokenContractPosition: number, jsRecipient: OrchardAddressNAPI, jsTokenCount: BigIntString, jsTotalAgreedPrice: BigIntString, jsFeeSpends: Array<SpendableNoteNAPI>, jsFeeChangeAddress: OrchardAddressNAPI, jsFeeAnchor: Uint8Array, jsSeed: Uint8Array, jsCoinType: number, jsAccount: number, jsMemo: Uint8Array, jsPlatformVersion?: number | undefined | null): Promise<ShieldedWithdrawalResultNAPI>
 }
 
 /**
@@ -430,9 +434,9 @@ export declare class ShieldedOutputNAPI {
    * `ShieldedMemoNAPI` is base-kept, so its wrapped napi object cannot be
    * recovered from this (shielded) instance's per-Env wrap map.
    */
-  constructor(jsAddress: ShieldedAddressNAPI, jsAmount: BigIntString, jsMemo: Uint8Array)
-  get address(): ShieldedAddressNAPI
-  set address(jsAddress: ShieldedAddressNAPI)
+  constructor(jsAddress: OrchardAddressNAPI, jsAmount: BigIntString, jsMemo: Uint8Array)
+  get address(): OrchardAddressNAPI
+  set address(jsAddress: OrchardAddressNAPI)
   get amount(): BigIntString
   set amount(jsAmount: BigIntString)
   /**
@@ -442,10 +446,6 @@ export declare class ShieldedOutputNAPI {
    */
   get memo(): Uint8Array
   set memo(jsMemo: Uint8Array)
-}
-
-export declare class ShieldedProverNAPI {
-  static init(): Promise<ShieldedProverNAPI>
 }
 
 /**
@@ -482,6 +482,13 @@ export interface IdentityCreateFromShieldedPoolResultNAPI {
 }
 
 /**
+ * Derives the sender's Orchard outgoing viewing key (External scope, 32 bytes)
+ * from a BIP-39 seed via ZIP-32 — the value to pass as `sender_ovk` to
+ * `shieldFromAssetLock` so the sender can later recover its own send.
+ */
+export declare function orchardOvkFromSeed(seed: Uint8Array, coinType: number, account: number): Uint8Array
+
+/**
  * Recovers your own notes from a list of shielded actions by trial-decrypting
  * each action's `encrypted_note` with the incoming viewing key derived from
  * `seed` via ZIP-32 (`m/32'/coin_type'/account'`, External scope).
@@ -507,13 +514,6 @@ export declare const enum ScopeNAPI {
   External = 0,
   Internal = 1,
 }
-
-/**
- * Derives the sender's shielded outgoing viewing key (External scope, 32 bytes)
- * from a BIP-39 seed via ZIP-32 — the value to pass as `sender_ovk` to
- * `shieldFromAssetLock` so the sender can later recover its own send.
- */
-export declare function shieldedOvkFromSeed(seed: Uint8Array, coinType: number, account: number): Uint8Array
 
 /**
  * Result of a proving shielded spend builder ([`ShieldedBuilderNAPI::shielded_withdrawal`],
