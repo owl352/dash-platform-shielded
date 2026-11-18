@@ -1,5 +1,5 @@
 [package]
-name = "pshenmic-orchard"
+name = "dash-platform-shielded"
 authors = ["owl352 <kokosinca123@gmail.com>"]
 version = "0.0.0"
 edition = "2024"
@@ -47,7 +47,7 @@ debug = false
 inherits = "release"
 opt-level = "z"
 
-[profile.release-wasm.package.pshenmic-orchard]
+[profile.release-wasm.package.dash-platform-shielded]
 opt-level = "s"
 
 [profile.release-wasm.package.halo2_proofs]

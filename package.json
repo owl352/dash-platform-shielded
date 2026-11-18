@@ -1,7 +1,7 @@
 {
-  "name": "pshenmic-orchard",
+  "name": "dash-platform-shielded",
   "version": "0.0.0",
-  "description": "Orchard/Halo 2 shielded proving engine for pshenmic-dpp (optional; loaded via setShielded(loadShielded()))",
+  "description": "Orchard/Halo 2 shielded proving engine for pshenmic-dpp (optional; eager module passed to setShielded())",
   "type": "commonjs",
   "main": "dist/src/index.cjs",
   "types": "dist/src/index.d.ts",
@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/src/index.d.ts",
       "default": "./dist/src/index.cjs"
+    },
+    "./lazy": {
+      "types": "./dist/src/lazy.d.ts",
+      "default": "./dist/src/lazy.cjs"
     },
     "./bindingsTypes": {
       "types": "./dist/binaries/bindingsTypes.d.ts"
@@ -26,7 +30,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/owl352/pshenmic-orchard.git"
+    "url": "git+https://github.com/owl352/dash-platform-shielded.git"
   },
   "author": "owl352",
   "license": "ISC",

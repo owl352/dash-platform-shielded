@@ -2,8 +2,8 @@
 //
 // VERDICT: de-dup is FEASIBLE. Every dpp napi boundary class is a THIN wrapper
 // over dashpay-domain serialization, so calling the domain method directly from
-// the orchard crate produces byte-identical output. Catalog (napi impl → domain
-// equivalent the orchard builder must use):
+// the shielded crate produces byte-identical output. Catalog (napi impl → domain
+// equivalent the shielded builder must use):
 //
 //   StateTransitionNAPI.to_bytes   → domain.serialize_to_bytes()
 //   StateTransitionNAPI.from_bytes → StateTransition::deserialize_from_bytes_untrusted(bytes)
@@ -26,7 +26,7 @@
 // must match). It tests EXISTING dpp behavior, so it passes by design.
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import { loadShielded } from '../dist/src/index.cjs'
+import shielded from '../dist/src/index.cjs'
 
 const DPP_DIR = process.env.DPP_DIR
   ?? path.resolve(process.cwd(), '../pshenmic-dpp-new-ark/pshenmic-dpp')
@@ -52,7 +52,7 @@ assert.equal(memo.toBytes().length, 36, 'ShieldedMemo is 36 bytes')
 assert.throws(() => dpp.ShieldedMemoWASM.fromBytes(new Uint8Array(10)), /36/)
 
 // StateTransition: serialize/deserialize round-trip (the critical return value).
-dpp.setShielded(loadShielded())
+dpp.setShielded(shielded)
 const builder = new dpp.ShieldedBuilderWASM()
 await builder.init()
 const recipient = dpp.ShieldedAddressWASM.fromSeed(SEED, 1, 0)

@@ -646,6 +646,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "dash-platform-shielded"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "dpp",
+ "grovedb-commitment-tree",
+ "hex",
+ "indexmap 1.9.3",
+ "indexmap 2.14.2",
+ "napi",
+ "napi-build",
+ "napi-derive",
+ "napi-derive-backend",
+ "rand",
+ "serde",
+ "serde_json",
+ "sha2",
+ "zip32",
+]
+
+[[package]]
 name = "dashcore"
 version = "0.45.0"
 source = "git+https://github.com/dashpay/rust-dashcore?rev=d631aaca3632cc713143476e363c9a9aca038d2e#d631aaca3632cc713143476e363c9a9aca038d2e"
@@ -2165,27 +2186,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "pshenmic-orchard"
-version = "0.0.0"
-dependencies = [
- "async-trait",
- "dpp",
- "grovedb-commitment-tree",
- "hex",
- "indexmap 1.9.3",
- "indexmap 2.14.2",
- "napi",
- "napi-build",
- "napi-derive",
- "napi-derive-backend",
- "rand",
- "serde",
- "serde_json",
- "sha2",
- "zip32",
 ]
 
 [[package]]

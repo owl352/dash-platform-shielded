@@ -1,4 +1,4 @@
-# pshenmic-orchard
+# dash-platform-shielded
 
 Optional **Orchard/Halo 2 shielded proving engine** for
 [`pshenmic-dpp`](https://github.com/owl352/pshenmic-dpp), as a **separate
@@ -7,15 +7,16 @@ isolation**; proving is opt-in.
 
 ## How it plugs in
 
-This package exports `loadShielded()`, which returns the proving module instance
-(native Node-API addon on Node, threaded wasm elsewhere). The consumer hands it to
+This package is opt-in: installing it means the app uses shielded proving, so the
+default entry **eagerly loads** the proving module (native Node-API addon on Node,
+threaded wasm elsewhere) and exports its NAPI surface. The consumer hands it to
 `pshenmic-dpp` explicitly with `setShielded()`:
 
 ```js
-import { loadShielded } from 'pshenmic-orchard'
+import shielded from 'dash-platform-shielded'
 import { setShielded, ShieldedBuilderWASM } from 'pshenmic-dpp'
 
-setShielded(loadShielded())            // wasm path needs SharedArrayBuffer (COOP/COEP)
+setShielded(shielded)                   // wasm path needs SharedArrayBuffer (COOP/COEP)
 const builder = new ShieldedBuilderWASM()
 await builder.init()
 ```
@@ -23,23 +24,35 @@ await builder.init()
 Both imports are **static**, so this survives bundler renaming. There is no global
 registry — the consumer wires the two packages together explicitly.
 
+Because the import itself instantiates the module, only import this entry where
+proving is available: Node, or a cross-origin-isolated browser (the wasm path
+needs `SharedArrayBuffer`). For deferred loading — non-isolated pages, SSR, tests,
+or wasm thread workers — use the lazy entry:
+
+```js
+import { loadShielded } from 'dash-platform-shielded/lazy'
+import { setShielded } from 'pshenmic-dpp'
+
+setShielded(loadShielded())            // loads now, not at import
+```
+
 The base ↔ proving boundary is **bytes**: dpp base classes are serialized into
 the shielded builder (separate napi instances never share wrapped napi objects).
-On Node, `loadShielded()` prefers the native Node-API addon (~3x faster proving);
-in browsers — or when the addon is unavailable for the platform — it loads the
-threaded wasm, which needs cross-origin isolation (SharedArrayBuffer).
+On Node, the module is the native Node-API addon (~3x faster proving); in browsers
+— or when the addon is unavailable for the platform — it is the threaded wasm,
+which needs cross-origin isolation (SharedArrayBuffer).
 
 ## Repository split
 
 This crate owns the **heavy proving bindings** (`src/orchard/`: builder, prover,
-orchard address/note/viewing-key/commitment-tree/spendable-note/shielded-output,
+address/note/viewing-key/commitment-tree/spendable-note/shielded-output,
 multi-transfer, signer, note recovery, `enums/scope`). It is **self-contained**:
 it serializes the dashpay `dpp` domain types directly (`src/orchard/serialize.rs`
 + `napi_utils.rs`) — there is **no `pshenmic-dpp` dependency**. The dashpay `dpp`
 domain library is a direct dependency with `shielded-client`.
 
-`pshenmic-dpp` keeps the base + the lightweight orchard data classes (`memo`,
-`serialized_action`, `transitions`); its heavy orchard modules / `proving`
+`pshenmic-dpp` keeps the base + the lightweight shielded data classes (`memo`,
+`serialized_action`, `transitions`); its heavy shielded modules / `proving`
 feature are the part that moved here.
 
 ## Layout
@@ -50,7 +63,7 @@ src/            Rust crate source (pure Rust)
   enums/scope.rs
   lib.rs        #![no_main] pub mod orchard/enums
 js/             JS source (copied to dist/, mirroring pshenmic-dpp's layout)
-  src/          entry API: index.cjs (+ index.d.ts) -> dist/src/
+  src/          entry API: index.cjs (eager) + lazy.cjs (deferred) -> dist/src/
   binaries/     napi glue: loader.cjs (loadShielded), memory.cjs (shared memory),
                 base122.cjs (decoder) -> dist/binaries/
 utils/          imported build helpers: convertBinary, buildWorkerBundle, base122,
@@ -64,7 +77,7 @@ dist/           published package (self-contained, like dpp) — BUILD OUTPUT:
                 src/ (API) + binaries/ (napi glue + native/<target>/*.node +
                 wasm/shieldedBytes.cjs + wasm/workerBundle.cjs + bindingsTypes.d.ts)
 test/           standalone / utility-parity (no dpp) + integration /
-                serialization-equivalence (dpp + orchard)
+                serialization-equivalence (dpp + shielded)
 ```
 
 ## Building
@@ -87,7 +100,7 @@ BUILD_STEPS=native NATIVE_BUILD_TARGET=aarch64-apple-darwin npm run build  # one
 ```
 
 The native Node-API addon is preferred on Node (~3x faster proving); the threaded
-wasm is the browser path / fallback (`loadShielded()` picks native when available).
+wasm is the browser path / fallback (the loader picks native when available).
 `wasm-opt -Oz` is mandatory (unoptimized is >8MB; Chrome's sync-compile limit is
 8MB). `npm run build:dist` only copies js → dist (no rebuild); `npm run build:typings`
 regenerates `dist/binaries/bindingsTypes.d.ts`.
@@ -97,8 +110,8 @@ regenerates `dist/binaries/bindingsTypes.d.ts`.
 Two levels (plain Node scripts — Node provides `SharedArrayBuffer`):
 
 ```sh
-npm test                 # standalone: loadShielded export + wasm instantiation + proving-key build (no dpp)
-npm run test:integration # dpp + orchard: setShielded(loadShielded()) + a REAL shielded transition across the boundary
+npm test                 # standalone: eager entry + lazy loader + wasm/native instantiation + proving-key build (no dpp)
+npm run test:integration # dpp + shielded: setShielded(shielded) + a REAL shielded transition across the boundary
 ```
 
 `test:integration` needs a **built** pshenmic-dpp (`dist/` with the base wasm);
@@ -115,7 +128,7 @@ harness covers the COOP/popup matrix.
 
 ## Notes
 
-- **Version alignment:** the bytes boundary couples dpp and pshenmic-orchard —
+- **Version alignment:** the bytes boundary couples dpp and dash-platform-shielded —
   release them with matching versions and matching `@emnapi` pins (currently
   `1.11.3`). The `version` here is a placeholder (`0.0.0`); set it at release.
 - **Wasm size:** the shielded wasm links the dpp base napi helpers (it uses them
