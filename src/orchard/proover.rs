@@ -4,18 +4,18 @@ use dpp::shielded::builder::OrchardProver;
 use grovedb_commitment_tree::ProvingKey;
 use napi_derive::napi;
 
-#[napi(js_name = "OrchardProverNAPI")]
-pub struct OrchardProverNAPI(Arc<ProvingKey>);
+#[napi(js_name = "ShieldedProverNAPI")]
+pub struct ShieldedProverNAPI(Arc<ProvingKey>);
 
 #[napi]
-impl OrchardProverNAPI {
+impl ShieldedProverNAPI {
     #[napi(js_name = "init")]
     pub async fn new() -> Self {
-        OrchardProverNAPI(Arc::new(ProvingKey::build()))
+        ShieldedProverNAPI(Arc::new(ProvingKey::build()))
     }
 }
 
-impl OrchardProverNAPI {
+impl ShieldedProverNAPI {
     /// Cheap `Arc` handle to the proving key for futures spawned off the JS
     /// thread (the proving methods run there so browsers' main thread never
     /// blocks on the rayon pool).
@@ -24,7 +24,7 @@ impl OrchardProverNAPI {
     }
 }
 
-impl OrchardProver for OrchardProverNAPI {
+impl OrchardProver for ShieldedProverNAPI {
     fn proving_key(&self) -> &ProvingKey {
         &self.0
     }

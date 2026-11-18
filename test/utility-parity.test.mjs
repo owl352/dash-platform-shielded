@@ -11,15 +11,13 @@
 // pins its JS surface to the exact behavior characterized from the base crate
 // (src/dynamic_value/mod.rs): same getType() strings, same constructor
 // conversion order (f64 before integers), same value round-trips, same
-// fromBigIntString/isBigInt. Run on the rebuilt orchard wasm, no dpp required:
+// fromBigIntString/isBigInt. Run on the rebuilt shielded wasm, no dpp required:
 //   node test/utility-parity.test.mjs
 import assert from 'node:assert/strict'
-import { loadShielded } from '../dist/src/index.cjs'
-
-const shielded = loadShielded()
+import shielded from '../dist/src/index.cjs'
 
 const DV = shielded.DynamicValue
-assert.ok(DV, 'orchard must expose the ported DynamicValue napi class')
+assert.ok(DV, 'the shielded module must expose the ported DynamicValue napi class')
 
 const toHex = (b) => Array.from(b).map((x) => x.toString(16).padStart(2, '0')).join('')
 

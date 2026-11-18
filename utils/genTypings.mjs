@@ -1,6 +1,6 @@
-// Generates the orchard napi TypeScript declarations (the proving NAPI surface:
-// ShieldedBuilderNAPI, OrchardProverNAPI, ...). pshenmic-dpp's Orchard JS
-// wrappers import these types from 'pshenmic-orchard/bindingsTypes' so they can
+// Generates the shielded napi TypeScript declarations (the proving NAPI surface:
+// ShieldedBuilderNAPI, ShieldedProverNAPI, ...). pshenmic-dpp's shielded JS
+// wrappers import these types from 'dash-platform-shielded/bindingsTypes' so they can
 // type-check against the proving module they delegate to at runtime, without
 // dpp itself compiling any proving code.
 //
@@ -11,7 +11,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const REPO = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-const BIN_NAME = 'pshenmic_orchard'
+const BIN_NAME = 'dash_platform_shielded'
 
 export async function genTypings () {
   const { NapiCli } = await import('@napi-rs/cli')
@@ -39,7 +39,7 @@ export async function genTypings () {
     fs.mkdirSync(distDir, { recursive: true })
     // The proving NAPI surface dpp's wrappers import as types.
     fs.writeFileSync(path.join(distDir, 'bindingsTypes.d.ts'), dts)
-    console.log(`Generated orchard napi typings -> dist/bindingsTypes.d.ts`)
+    console.log(`Generated shielded napi typings -> dist/bindingsTypes.d.ts`)
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true })
   }

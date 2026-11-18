@@ -1,9 +1,10 @@
 // SHIELDED (threaded) wasm creation — the Orchard/Halo 2 proving module.
-// Loaded ON DEMAND via loadShielded(), which the consumer passes to pshenmic-dpp
-// via setShielded(). The wasm path needs shared memory (SharedArrayBuffer /
-// cross-origin isolation in browsers) and wasm thread workers, so nothing here
-// may run at import time. Requiring this file only sets up the worker branch;
-// the bytes are decoded, compiled and instantiated inside loadShielded().
+// The default dash-platform-shielded entry calls loadShielded() at import (the package
+// is opt-in); the lazy entry exports loadShielded() for callers that must defer.
+// The wasm path needs shared memory (SharedArrayBuffer / cross-origin isolation
+// in browsers) and wasm thread workers, so requiring this file only sets up the
+// worker branch; the bytes are decoded, compiled and instantiated inside
+// loadShielded().
 const { WASI } = require('@tybys/wasm-util');
 const { getDefaultContext } = require('@emnapi/runtime');
 const { instantiateNapiModuleSync, MessageHandler } = require('@emnapi/core');
@@ -107,12 +108,12 @@ if (isWorker) {
     const target = getTarget();
     if (target === null) return null;
     try {
-      const nativeModule = require(`./native/${target}/pshenmic_orchard.node`);
-      console.log(`running on native orchard (${target})`);
+      const nativeModule = require(`./native/${target}/dash_platform_shielded.node`);
+      console.log(`running on native shielded (${target})`);
       return nativeModule;
     } catch (error) {
       const reason = String(error?.message ?? error).split('\n')[0];
-      console.error(`Failed to load native orchard (${target}): ${reason}. Using WebAssembly instead Node-API`);
+      console.error(`Failed to load native shielded (${target}): ${reason}. Using WebAssembly instead Node-API`);
       return null;
     }
   }
@@ -196,7 +197,7 @@ if (isWorker) {
           const { source } = require('./wasm/workerBundle.cjs');
           workerBlobUrl = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
         }
-        return new Worker(workerBlobUrl, { name: 'pshenmic-orchard-wasm-thread' });
+        return new Worker(workerBlobUrl, { name: 'pshenmic-shielded-wasm-thread' });
       },
       overwriteImports(importObject) {
         importObject.env = {

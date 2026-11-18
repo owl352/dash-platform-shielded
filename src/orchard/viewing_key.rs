@@ -6,7 +6,7 @@ use zip32::AccountId;
 
 use crate::orchard::napi_utils::DynamicValue;
 
-use crate::{enums::scope::scope_or_external, orchard::orchard_address::OrchardAddressNAPI};
+use crate::{enums::scope::scope_or_external, orchard::orchard_address::ShieldedAddressNAPI};
 
 /// Raw encoding size of an Orchard full viewing key (ak || nk || rivk).
 const FULL_VIEWING_KEY_SIZE: usize = 96;
@@ -144,17 +144,17 @@ impl FullViewingKeyNAPI {
         &self,
         diversifier_index: Option<u32>,
         js_scope: Option<&DynamicValue>,
-    ) -> Result<OrchardAddressNAPI, napi::Error> {
+    ) -> Result<ShieldedAddressNAPI, napi::Error> {
         let scope = scope_or_external(js_scope)?;
         let address = self.0.address_at(diversifier_index.unwrap_or(0), scope);
 
-        Ok(OrchardAddressNAPI::from(OrchardAddress::from(address)))
+        Ok(ShieldedAddressNAPI::from(OrchardAddress::from(address)))
     }
 
     /// The scope this address was derived under, or `null` if it does not
     /// belong to this key.
     #[napi(js_name = "scopeForAddress")]
-    pub fn scope_for_address(&self, js_address: &OrchardAddressNAPI) -> Option<String> {
+    pub fn scope_for_address(&self, js_address: &ShieldedAddressNAPI) -> Option<String> {
         let address = OrchardAddress::from(js_address).into_inner();
 
         self.0.scope_for_address(&address).map(|scope| match scope {
@@ -252,16 +252,16 @@ impl IncomingViewingKeyNAPI {
     pub fn address(
         &self,
         diversifier_index: Option<u32>,
-    ) -> Result<OrchardAddressNAPI, napi::Error> {
+    ) -> Result<ShieldedAddressNAPI, napi::Error> {
         let address = self.0.address_at(diversifier_index.unwrap_or(0));
 
-        Ok(OrchardAddressNAPI::from(OrchardAddress::from(address)))
+        Ok(ShieldedAddressNAPI::from(OrchardAddress::from(address)))
     }
 
     /// The diversifier index `address` was derived at, or `null` if the address
     /// was not derived from this key.
     #[napi(js_name = "diversifierIndex")]
-    pub fn diversifier_index(&self, js_address: &OrchardAddressNAPI) -> Option<u32> {
+    pub fn diversifier_index(&self, js_address: &ShieldedAddressNAPI) -> Option<u32> {
         let address = OrchardAddress::from(js_address).into_inner();
 
         self.0
