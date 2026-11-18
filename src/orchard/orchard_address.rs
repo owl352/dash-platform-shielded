@@ -12,38 +12,38 @@ use crate::{
 };
 
 #[derive(Clone)]
-#[napi(js_name = "ShieldedAddressNAPI")]
-pub struct ShieldedAddressNAPI(OrchardAddress);
+#[napi(js_name = "OrchardAddressNAPI")]
+pub struct OrchardAddressNAPI(OrchardAddress);
 
-impl From<OrchardAddress> for ShieldedAddressNAPI {
+impl From<OrchardAddress> for OrchardAddressNAPI {
     fn from(value: OrchardAddress) -> Self {
-        ShieldedAddressNAPI(value)
+        OrchardAddressNAPI(value)
     }
 }
 
-impl From<ShieldedAddressNAPI> for OrchardAddress {
-    fn from(value: ShieldedAddressNAPI) -> Self {
+impl From<OrchardAddressNAPI> for OrchardAddress {
+    fn from(value: OrchardAddressNAPI) -> Self {
         value.0
     }
 }
 
-impl From<&ShieldedAddressNAPI> for OrchardAddress {
-    fn from(value: &ShieldedAddressNAPI) -> Self {
+impl From<&OrchardAddressNAPI> for OrchardAddress {
+    fn from(value: &OrchardAddressNAPI) -> Self {
         value.0.clone()
     }
 }
 
-impl TryFrom<Either<&ShieldedAddressNAPI, &DynamicValue>> for ShieldedAddressNAPI {
+impl TryFrom<Either<&OrchardAddressNAPI, &DynamicValue>> for OrchardAddressNAPI {
     type Error = napi::Error;
 
-    fn try_from(value: Either<&ShieldedAddressNAPI, &DynamicValue>) -> Result<Self, Self::Error> {
+    fn try_from(value: Either<&OrchardAddressNAPI, &DynamicValue>) -> Result<Self, Self::Error> {
         match value {
             Either::A(addr) => Ok(addr.clone()),
             Either::B(dyn_val) => {
                 if dyn_val.is_string() {
-                    ShieldedAddressNAPI::from_bech32m(dyn_val.as_string().unwrap())
+                    OrchardAddressNAPI::from_bech32m(dyn_val.as_string().unwrap())
                 } else if dyn_val.is_uint_8_array() {
-                    ShieldedAddressNAPI::from_bytes(dyn_val.as_bytes().unwrap().clone().into())
+                    OrchardAddressNAPI::from_bytes(dyn_val.as_bytes().unwrap().clone().into())
                 } else {
                     Err(napi::Error::new(
                         napi::Status::InvalidArg,
@@ -56,10 +56,10 @@ impl TryFrom<Either<&ShieldedAddressNAPI, &DynamicValue>> for ShieldedAddressNAP
 }
 
 #[napi]
-impl ShieldedAddressNAPI {
+impl OrchardAddressNAPI {
     #[napi(js_name = "fromBech32m")]
     pub fn from_bech32m(bech32m: String) -> Result<Self, napi::Error> {
-        Ok(ShieldedAddressNAPI(
+        Ok(OrchardAddressNAPI(
             OrchardAddress::from_bech32m_string(bech32m.as_str()).with_js_error()?,
         ))
     }
@@ -75,7 +75,7 @@ impl ShieldedAddressNAPI {
 
         let raw: [u8; ORCHARD_ADDRESS_SIZE] = bytes.to_vec().as_slice().try_into().unwrap();
 
-        Ok(ShieldedAddressNAPI(
+        Ok(OrchardAddressNAPI(
             OrchardAddress::from_raw_bytes(&raw).with_js_error()?,
         ))
     }
@@ -103,7 +103,7 @@ impl ShieldedAddressNAPI {
         let payment_address =
             fvk.address_at(diversifier_index.unwrap_or(0), scope_or_external(js_scope)?);
 
-        Ok(ShieldedAddressNAPI(OrchardAddress::from(payment_address)))
+        Ok(OrchardAddressNAPI(OrchardAddress::from(payment_address)))
     }
 
     /// Derives the payment address at `diversifier_index` (default 0) from a
@@ -133,11 +133,11 @@ impl ShieldedAddressNAPI {
     }
 }
 
-/// Derives the sender's shielded outgoing viewing key (External scope, 32 bytes)
+/// Derives the sender's Orchard outgoing viewing key (External scope, 32 bytes)
 /// from a BIP-39 seed via ZIP-32 — the value to pass as `sender_ovk` to
 /// `shieldFromAssetLock` so the sender can later recover its own send.
-#[napi(js_name = "shieldedOvkFromSeed")]
-pub fn shielded_ovk_from_seed(
+#[napi(js_name = "orchardOvkFromSeed")]
+pub fn orchard_ovk_from_seed(
     seed: Uint8Array,
     coin_type: u32,
     account: u32,

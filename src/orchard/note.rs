@@ -7,7 +7,7 @@ use napi_derive::napi;
 
 use crate::orchard::napi_utils::{BigIntString, TryToU64};
 
-use crate::orchard::orchard_address::ShieldedAddressNAPI;
+use crate::orchard::orchard_address::OrchardAddressNAPI;
 
 /// Reconstructs an Orchard [`Note`] from its parts, validating `rho`/`rseed`
 /// and the resulting note commitment.
@@ -73,7 +73,7 @@ impl From<NoteNAPI> for Note {
 impl NoteNAPI {
     #[napi(constructor)]
     pub fn new(
-        js_address: &ShieldedAddressNAPI,
+        js_address: &OrchardAddressNAPI,
         js_value: BigIntString,
         js_rho: Uint8Array,
         js_rseed: Uint8Array,
@@ -90,8 +90,8 @@ impl NoteNAPI {
     }
 
     #[napi(getter, js_name = "address")]
-    pub fn address(&self) -> ShieldedAddressNAPI {
-        ShieldedAddressNAPI::from(OrchardAddress::from(self.0.recipient()))
+    pub fn address(&self) -> OrchardAddressNAPI {
+        OrchardAddressNAPI::from(OrchardAddress::from(self.0.recipient()))
     }
 
     #[napi(getter, js_name = "value")]
@@ -119,7 +119,7 @@ impl NoteNAPI {
     }
 
     #[napi(setter, js_name = "address")]
-    pub fn set_address(&mut self, js_address: &ShieldedAddressNAPI) -> Result<(), napi::Error> {
+    pub fn set_address(&mut self, js_address: &OrchardAddressNAPI) -> Result<(), napi::Error> {
         let recipient = OrchardAddress::from(js_address).into_inner();
         self.0 = build_note(
             recipient,

@@ -1,5 +1,5 @@
 // Generates the shielded napi TypeScript declarations (the proving NAPI surface:
-// ShieldedBuilderNAPI, ShieldedProverNAPI, ...). pshenmic-dpp's shielded JS
+// ShieldedBuilderNAPI, OrchardProverNAPI, ...). pshenmic-dpp's shielded JS
 // wrappers import these types from 'dash-platform-shielded/bindingsTypes' so they can
 // type-check against the proving module they delegate to at runtime, without
 // dpp itself compiling any proving code.
