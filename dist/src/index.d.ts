@@ -1,5 +1,6 @@
-// Eager entry (index.cjs): importing the package instantiates the proving module
-// and exports its NAPI surface. Pass it to pshenmic-dpp's setShielded().
-// Use 'dash-platform-shielded/lazy' when the load must be deferred.
-declare const shielded: typeof import('../binaries/bindingsTypes.js')
-export = shielded
+// Public types. Importing does not load the proving module; construction does.
+export * from '../ts/index.js'
+
+import * as api from '../ts/index.js'
+declare const shielded: typeof api
+export default shielded
