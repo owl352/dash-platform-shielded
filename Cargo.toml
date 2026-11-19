@@ -17,6 +17,9 @@ dpp = { git = "https://github.com/dashpay/platform", tag = "v5.0.0-rc.8", defaul
     "data-contract-json-conversion",
     "shielded-client"
 ] }
+drive = { git = "https://github.com/dashpay/platform", tag = "v5.0.0-rc.8", default-features = false, features = [
+    "verify"
+] }
 grovedb-commitment-tree = { git = "https://github.com/dashpay/grovedb", rev = "2128ea18f9b1c2f9502f99967b1b1c6485c91f8b", features = ["client"] }
 indexmap = "2.0.2"
 zip32 = "=0.2.1"

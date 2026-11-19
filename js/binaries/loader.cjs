@@ -120,7 +120,7 @@ if (isWorker) {
 
   // Returns the proving module's napi exports — the native addon on Node when
   // available, else the threaded wasm instance. Idempotent: a second call
-  // returns the same instance (the consumer caches it via setShielded).
+  // returns the same instance (the participant caches it).
   function loadShielded() {
     if (shieldedExports !== undefined) {
       return shieldedExports;

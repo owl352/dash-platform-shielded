@@ -26,11 +26,13 @@
 // must match). It tests EXISTING dpp behavior, so it passes by design.
 import assert from 'node:assert/strict'
 import path from 'node:path'
-import shielded from '../dist/src/index.cjs'
 
 const DPP_DIR = process.env.DPP_DIR
   ?? path.resolve(process.cwd(), '../pshenmic-dpp-new-ark/pshenmic-dpp')
+import { DashPlatformShielded } from '../dist/src/index.js'
+
 const dpp = await import(path.join(DPP_DIR, 'dist/src/wasm.js'))
+const shielded = new DashPlatformShielded()
 
 const toHex = (b) => Array.from(b).map((x) => x.toString(16).padStart(2, '0')).join('')
 const SEED = new Uint8Array(64)
@@ -47,17 +49,16 @@ const proof = dpp.AssetLockProofWASM.createChainAssetLockProof(1499737, outPoint
 assert.equal(toHex(dpp.AssetLockProofWASM.fromBytes(proof.bytes()).bytes()), toHex(proof.bytes()))
 
 // ShieldedMemo: exactly 36 bytes; wrong length rejected.
-const memo = dpp.ShieldedMemoWASM.fromString('spike')
+const memo = shielded.ShieldedMemoWASM.fromString('spike')
 assert.equal(memo.toBytes().length, 36, 'ShieldedMemo is 36 bytes')
-assert.throws(() => dpp.ShieldedMemoWASM.fromBytes(new Uint8Array(10)), /36/)
+assert.throws(() => shielded.ShieldedMemoWASM.fromBytes(new Uint8Array(10)), /36/)
 
 // StateTransition: serialize/deserialize round-trip (the critical return value).
-dpp.setShielded(shielded)
-const builder = new dpp.ShieldedBuilderWASM()
+const builder = new shielded.ShieldedBuilderWASM()
 await builder.init()
-const recipient = dpp.OrchardAddressWASM.fromSeed(SEED, 1, 0)
+const recipient = shielded.OrchardAddressWASM.fromSeed(SEED, 1, 0)
 const privateKey = dpp.PrivateKeyWASM.fromWIF('cUy4wbim4y9NDwC24omx8oWY5WqfmjSU2gdcZtTXza2xDCAkQXRP')
-const st = await builder.shieldFromAssetLock(recipient, 40000000000n, proof, privateKey, dpp.ShieldedMemoWASM.empty(), 0)
+const st = await builder.shieldFromAssetLock(recipient, 40000000000n, proof, privateKey, shielded.ShieldedMemoWASM.empty(), 0)
 const bytes = st.bytes()
 assert.equal(toHex(dpp.StateTransitionWASM.fromBytes(bytes).bytes()), toHex(bytes), 'StateTransition bytes round-trip')
 assert.equal(bytes.length, 8300, 'fixed-input transition is 8300 bytes')
