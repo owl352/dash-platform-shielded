@@ -86,8 +86,8 @@ jobs:
           retention-days: 1
           if-no-files-found: error
           path: |
-            dist/binaries/wasm
-            dist/binaries/bindingsTypes.d.ts
+            pkg/binaries/wasm
+            pkg/binaries/bindingsTypes.ts
 
   native:
     name: Build native (${{ matrix.group.name }})
@@ -173,7 +173,7 @@ jobs:
           name: bin-native-${{ matrix.group.name }}
           retention-days: 1
           if-no-files-found: error
-          path: dist/binaries/native
+          path: pkg/binaries/native
 
   assemble:
     name: Assemble dist
@@ -199,21 +199,24 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: bin-wasm
-          path: dist/binaries
+          path: pkg/binaries
 
       - name: Download native binaries
         uses: actions/download-artifact@v8
         with:
           pattern: bin-native-*
           merge-multiple: true
-          path: dist/binaries/native
+          path: pkg/binaries/native
 
-      # Copies js/ -> dist/ (src API + binaries napi glue) around the downloaded
-      # wasm/native/typings outputs.
-      - name: Bundle dist
+      # Assemble pkg/binaries (glue + downloaded wasm/native/typings) into
+      # dist/binaries, then compile pkg/src -> dist/src.
+      - name: Bundle binaries
         run: node build.cjs
         env:
           BUILD_STEPS: bundle
+
+      - name: Compile TypeScript
+        run: yarn build:ts
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
