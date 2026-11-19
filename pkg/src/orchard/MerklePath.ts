@@ -1,5 +1,5 @@
-import type { MerklePathNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { shieldedProvider } from '../../provider.js'
+import type { MerklePathNAPI } from '../../binaries/bindingsTypes.js'
+import { shieldedProvider } from '../provider.js'
 
 export class MerklePathWASM {
   /** @private **/

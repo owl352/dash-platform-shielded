@@ -1,5 +1,5 @@
-import type { RecoveredNoteNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { shieldedProvider } from '../../provider.js'
+import type { RecoveredNoteNAPI } from '../../binaries/bindingsTypes.js'
+import { shieldedProvider } from '../provider.js'
 import { NoteWASM } from './Note.js'
 
 /** A note recovered from a shielded action by trial-decryption. */

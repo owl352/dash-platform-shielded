@@ -1,5 +1,5 @@
-import type { SpendableNoteNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { shieldedProvider } from '../../provider.js'
+import type { SpendableNoteNAPI } from '../../binaries/bindingsTypes.js'
+import { shieldedProvider } from '../provider.js'
 import { NoteWASM } from './Note.js'
 import { MerklePathWASM } from './MerklePath.js'
 

@@ -56,7 +56,7 @@ This crate owns the **complete shielded engine**:
   recovery, `enums/scope`);
 - shielded pool verification (`src/verify/shielded/`: encrypted notes, anchors,
   most-recent anchor, pool state, notes count, nullifiers);
-- the TypeScript wrappers (`js/ts/`: Orchard structs, shielded transitions,
+- the TypeScript wrappers (`pkg/src/`: Orchard classes, bytes-based builder,
   verify functions).
 
 The package is **completely independent of `pshenmic-dpp`**. The proving core
@@ -71,26 +71,29 @@ primitives. It has no dependency on this package and does not re-export it.
 
 ```
 src/            Rust crate source (pure Rust)
-  orchard/      heavy proving napi bindings + napi_utils/serialize (domain-direct)
+  orchard/      proving napi bindings + napi_utils/serialize (domain-direct)
+  verify/       shielded pool proof verification
   enums/scope.rs
-  lib.rs        #![no_main] pub mod orchard/enums
-js/             JS source (copied to dist/, mirroring pshenmic-dpp's layout)
-  src/          entry API: index.js (DashPlatformShielded) + lazy.js -> dist/src/
-  ts/           TypeScript wrappers + verify functions -> dist/ts/
+  lib.rs        #![no_main] pub mod orchard/verify/enums
+pkg/            TypeScript + NAPI glue source (mirrors pshenmic-dpp)
+  src/          entry API: index.ts (DashPlatformShielded) + lazy.ts + wrappers.ts
+    orchard/    Orchard data classes + bytes-based ShieldedBuilder
+    verify/     shielded pool verification wrappers
   binaries/     napi glue: loader.cjs (loadShielded), memory.cjs (shared memory),
-                base122.cjs (decoder) -> dist/binaries/
+                base122.cjs (decoder); native/ + wasm/ + bindingsTypes are build outputs
 utils/          imported build helpers: convertBinary, buildWorkerBundle, base122,
                 genTypings (napi --dts)
 scripts/        standalone scripts: wasm-opt.sh
 Cargo.toml      deps: dashpay dpp (shielded-client), grovedb-commitment-tree,
                 zip32, napi, ... (self-contained; no pshenmic-dpp dependency)
 build.rs        napi-build setup + reactor crt (_initialize)
-build.cjs       builds shielded wasm + worker bundle + napi typings into dist/
-dist/           published package (self-contained, like dpp) — BUILD OUTPUT:
-                src/ (API) + binaries/ (napi glue + native/<target>/*.node +
+build.cjs       builds wasm + native + napi typings into pkg/binaries, then
+                assembles dist/binaries
+tsconfig.json   compiles pkg/src -> dist/src (rootDir pkg, outDir dist)
+dist/           published package — BUILD OUTPUT:
+                src/ (compiled API) + binaries/ (napi glue + native/<target>/*.node +
                 wasm/shieldedBytes.cjs + wasm/workerBundle.cjs + bindingsTypes.d.ts)
-test/           standalone / utility-parity (no dpp) + integration /
-                serialization-equivalence (dpp + shielded)
+test/           standalone / utility-parity (no dpp)
 ```
 
 ## Building
@@ -107,16 +110,16 @@ Prerequisites:
 
 ```sh
 npm install
-npm run build        # wasm + native (all targets) + typings + bundle -> dist/
-BUILD_STEPS=wasm npm run build        # just the threaded wasm
-BUILD_STEPS=native NATIVE_BUILD_TARGET=aarch64-apple-darwin npm run build  # one addon
+npm run build        # wasm + native (all targets) + typings + bundle -> dist/ + tsc
+BUILD_STEPS=wasm node build.cjs        # just the threaded wasm
+BUILD_STEPS=native NATIVE_BUILD_TARGET=aarch64-apple-darwin node build.cjs  # one addon
 ```
 
 The native Node-API addon is preferred on Node (~3x faster proving); the threaded
 wasm is the browser path / fallback (the loader picks native when available).
 `wasm-opt -Oz` is mandatory (unoptimized is >8MB; Chrome's sync-compile limit is
-8MB). `npm run build:dist` only copies js → dist (no rebuild); `npm run build:typings`
-regenerates `dist/binaries/bindingsTypes.d.ts`.
+8MB). `npm run build:ts` compiles `pkg/src` → `dist/src`; `npm run build:typings`
+regenerates the ignored `pkg/binaries/bindingsTypes.ts` source.
 
 ## Testing
 

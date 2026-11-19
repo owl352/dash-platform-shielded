@@ -1,10 +1,9 @@
 {
   "compilerOptions": {
-    "outDir": "./dist/ts",
-    "rootDir": "./js/ts",
+    "outDir": "./dist",
+    "rootDir": "./pkg",
     "module": "Node16",
     "moduleResolution": "Node16",
-    "ignoreDeprecations": "6.0",
     "target": "ES2022",
     "lib": ["ES2022", "DOM"],
     "declaration": true,
@@ -16,5 +15,5 @@
     "forceConsistentCasingInFileNames": true,
     "noEmitOnError": false
   },
-  "include": ["js/ts/**/*"]
+  "include": ["pkg/**/*"]
 }

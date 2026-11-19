@@ -26,11 +26,10 @@
     "dist/"
   ],
   "scripts": {
-    "build": "node build.cjs && npm run build:ts && npm run build:dist",
-    "build:dist": "node -e \"const fs=require('fs');fs.rmSync('dist/src',{recursive:true,force:true});fs.cpSync('js/src','dist/src',{recursive:true});fs.cpSync('js/binaries','dist/binaries',{recursive:true})\"",
+    "build": "node build.cjs && npm run build:ts",
     "build:typings": "node utils/genTypings.mjs",
     "test": "node test/standalone.test.mjs && node test/utility-parity.test.mjs",
-    "build:ts": "node -e \"require('fs').rmSync('dist/ts',{recursive:true,force:true})\" && tsc"
+    "build:ts": "rm -rf dist/src dist/binaries/bindingsTypes.js dist/binaries/bindingsTypes.d.ts && tsc"
   },
   "repository": {
     "type": "git",

@@ -1,7 +1,7 @@
-import type { FullViewingKeyNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { shieldedProvider } from '../../provider.js'
-import { ScopeLike } from '../../types.js'
-import { valueToShieldedDynamicValue } from '../../utils.js'
+import type { FullViewingKeyNAPI } from '../../binaries/bindingsTypes.js'
+import { shieldedProvider } from '../provider.js'
+import { ScopeLike } from '../types.js'
+import { valueToShieldedDynamicValue } from '../utils.js'
 import { IncomingViewingKeyWASM } from './IncomingViewingKey.js'
 import { OrchardAddressWASM } from './OrchardAddress.js'
 

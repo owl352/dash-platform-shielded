@@ -1,5 +1,5 @@
-import type { CommitmentTreeNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { shieldedProvider } from '../../provider.js'
+import type { CommitmentTreeNAPI } from '../../binaries/bindingsTypes.js'
+import { shieldedProvider } from '../provider.js'
 import { MerklePathWASM } from './MerklePath.js'
 
 export class CommitmentTreeWASM {

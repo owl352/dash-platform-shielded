@@ -1,5 +1,5 @@
-import type { OrchardProverNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { shieldedProvider } from '../../provider.js'
+import type { OrchardProverNAPI } from '../../binaries/bindingsTypes.js'
+import { shieldedProvider } from '../provider.js'
 
 /**
  * Reusable Orchard prover holding the Halo 2 proving key. Building it is

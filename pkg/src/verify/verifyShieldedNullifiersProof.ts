@@ -1,6 +1,6 @@
-import { shieldedProvider } from '../../provider.js'
-import { IdentifierLike, PlatformVersionLike, VerifiedShieldedNullifiers } from '../../types.js'
-import { identifierToBytes, platformVersionToNumber } from '../../utils.js'
+import { shieldedProvider } from '../provider.js'
+import { IdentifierLike, PlatformVersionLike, VerifiedShieldedNullifiers } from '../types.js'
+import { identifierToBytes, platformVersionToNumber } from '../utils.js'
 
 /** `tokenId` selects that token's shielded pool; without it the credits pool is verified **/
 export function verifyShieldedNullifiersProof (

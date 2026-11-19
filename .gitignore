@@ -4,3 +4,7 @@ target
 *.log
 .DS_Store
 .idea
+# Build outputs assembled into dist/ (pkg/binaries keeps only the JS glue)
+pkg/binaries/native
+pkg/binaries/wasm
+pkg/binaries/bindingsTypes.ts

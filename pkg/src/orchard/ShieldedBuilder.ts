@@ -2,10 +2,10 @@ import type {
   IdentityCreateFromShieldedPoolResultNAPI,
   ShieldedBuilderNAPI,
   ShieldedWithdrawalResultNAPI
-} from 'dash-platform-shielded/bindingsTypes'
-import { shieldedProvider } from '../../provider.js'
-import type { PlatformVersionLike, PoolingLike } from '../../types.js'
-import { platformVersionToNumber } from '../../utils.js'
+} from '../../binaries/bindingsTypes.js'
+import { shieldedProvider } from '../provider.js'
+import type { PlatformVersionLike, PoolingLike } from '../types.js'
+import { platformVersionToNumber } from '../utils.js'
 import { OrchardAddressWASM } from './OrchardAddress.js'
 import { ShieldedOutputWASM } from './ShieldedOutput.js'
 import type { SpendableNoteWASM } from './SpendableNote.js'

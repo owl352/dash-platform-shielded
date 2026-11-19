@@ -1,4 +1,4 @@
-import type { DynamicValue } from 'dash-platform-shielded/bindingsTypes'
+import type { DynamicValue } from '../binaries/bindingsTypes.js'
 import { shieldedProvider } from './provider.js'
 import type { IdentifierLike, PlatformVersionLike } from './types.js'
 

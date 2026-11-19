@@ -1,5 +1,5 @@
-import type { ShieldedOutputNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { shieldedProvider } from '../../provider.js'
+import type { ShieldedOutputNAPI } from '../../binaries/bindingsTypes.js'
+import { shieldedProvider } from '../provider.js'
 import { OrchardAddressWASM } from './OrchardAddress.js'
 
 /**

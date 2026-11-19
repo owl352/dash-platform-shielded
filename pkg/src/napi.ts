@@ -1,5 +1,5 @@
 import loader from '../binaries/loader.cjs'
-import type * as ShieldedNapi from 'dash-platform-shielded/bindingsTypes'
+import type * as ShieldedNapi from '../binaries/bindingsTypes.js'
 
 export type ShieldedProtocol = typeof ShieldedNapi
 

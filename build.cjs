@@ -10,8 +10,8 @@
 //              shieldedBytes.cjs + workerBundle.cjs. Sync-compiled at the eager
 //              entry / loadShielded(); MUST stay < 8MB (Chrome sync-compile limit).
 //   native   NATIVE_BUILD_TARGET addons -> binaries/native/<target>/*.node
-//   typings  napi typings (host build) -> binaries/bindingsTypes.d.ts
-//   bundle   copy js/ -> dist/ (src API + binaries napi glue)
+//   typings  napi typings (host build) -> pkg/binaries/bindingsTypes.ts
+//   bundle   copy pkg/binaries -> dist/binaries (napi glue + native/wasm)
 //
 // Requires: nightly-2026-08-15 + wasm32-wasip1-threads + rust-src for wasm;
 // cargo-zigbuild (linux) / cargo-xwin (windows) for cross native; clang/llvm-ar;
@@ -40,7 +40,7 @@ const BIN_NAME = "dash_platform_shielded";
 const CHROME_SYNC_COMPILE_LIMIT = 8 * 1024 * 1024;
 
 const distDir = path.join(ROOT, "dist");
-const binariesOutputDir = path.join(distDir, "binaries");
+const binariesOutputDir = path.join(ROOT, "pkg", "binaries");
 const wasmOutputDir = path.join(binariesOutputDir, "wasm");
 
 const emnapiLinkDir = path.join(require.resolve("emnapi"), "..", "lib", "wasm32-wasi-threads");
@@ -193,8 +193,14 @@ async function buildNative() {
 }
 
 function bundle() {
-  console.log("--- Copying js -> dist ---");
-  fs.cpSync(path.join(ROOT, "js"), distDir, { recursive: true });
+  console.log("--- Copying pkg/binaries -> dist/binaries ---");
+  const outDir = path.join(distDir, "binaries");
+  fs.mkdirSync(outDir, { recursive: true });
+
+  for (const entry of fs.readdirSync(binariesOutputDir)) {
+    if (entry.endsWith(".ts") || entry.endsWith(".d.cts")) continue;
+    fs.cpSync(path.join(binariesOutputDir, entry), path.join(outDir, entry), { recursive: true });
+  }
 }
 
 main().catch((error) => {

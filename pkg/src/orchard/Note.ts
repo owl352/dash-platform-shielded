@@ -1,5 +1,5 @@
-import type { NoteNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { shieldedProvider } from '../../provider.js'
+import type { NoteNAPI } from '../../binaries/bindingsTypes.js'
+import { shieldedProvider } from '../provider.js'
 import { OrchardAddressWASM } from './OrchardAddress.js'
 
 export class NoteWASM {

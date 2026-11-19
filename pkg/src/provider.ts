@@ -1,5 +1,5 @@
-import { loadShielded } from '../napi.js'
-import type { ShieldedProtocol } from '../napi.js'
+import { loadShielded } from './napi.js'
+import type { ShieldedProtocol } from './napi.js'
 
 /**
  * Provider for this package's own proving NAPI surface. There is no dpp here:

@@ -1,8 +1,6 @@
 // Generates the shielded napi TypeScript declarations (the proving NAPI surface:
-// ShieldedBuilderNAPI, OrchardProverNAPI, ...). pshenmic-dpp's shielded JS
-// wrappers import these types from 'dash-platform-shielded/bindingsTypes' so they can
-// type-check against the proving module they delegate to at runtime, without
-// dpp itself compiling any proving code.
+// ShieldedBuilderNAPI, OrchardProverNAPI, ...). The package's own wrappers import
+// these types from the generated source; tsc emits the published .d.ts.
 //
 // Mirrors dpp's generateTypings(): a host `napi build --dts` into a temp dir (so
 // the .node output never lands in the package), keeping only the declarations.
@@ -35,11 +33,11 @@ export async function genTypings () {
     await task
 
     const dts = fs.readFileSync(path.join(tempDir, `${BIN_NAME}.d.ts`), 'utf8')
-    const distDir = path.join(REPO, 'dist', 'binaries')
-    fs.mkdirSync(distDir, { recursive: true })
-    // The proving NAPI surface dpp's wrappers import as types.
-    fs.writeFileSync(path.join(distDir, 'bindingsTypes.d.ts'), dts)
-    console.log(`Generated shielded napi typings -> dist/bindingsTypes.d.ts`)
+    const outDir = path.join(REPO, 'pkg', 'binaries')
+    fs.mkdirSync(outDir, { recursive: true })
+    // Source declarations; tsc emits dist/binaries/bindingsTypes.d.ts.
+    fs.writeFileSync(path.join(outDir, 'bindingsTypes.ts'), dts)
+    console.log('Generated shielded napi typings -> pkg/binaries/bindingsTypes.ts')
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true })
   }

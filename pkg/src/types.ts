@@ -1,4 +1,4 @@
-import type * as ShieldedNapi from 'dash-platform-shielded/bindingsTypes'
+import type * as ShieldedNapi from '../binaries/bindingsTypes.js'
 
 /** Anything that can expose raw identifier bytes. */
 export type IdentifierLike = Uint8Array | { bytes(): Uint8Array }
