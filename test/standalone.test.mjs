@@ -21,4 +21,9 @@ assert.ok(shielded.verifyShieldedNotesCountProof, 'verify functions must be avai
 const prover = await shielded.napi.OrchardProverNAPI.init()
 assert.ok(prover, 'OrchardProverNAPI.init() must resolve')
 
-console.log('STANDALONE_OK: constructor entry + lazy loader + proving key build')
+// The bytes-based builder initializes without any dpp dependency.
+const builder = new shielded.ShieldedBuilderWASM()
+await builder.init()
+assert.ok(builder._rawShieldedBuilder, 'ShieldedBuilderWASM.init() must resolve')
+
+console.log('STANDALONE_OK: constructor entry + lazy loader + builder/proving key build')

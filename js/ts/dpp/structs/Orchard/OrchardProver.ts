@@ -1,5 +1,5 @@
 import type { OrchardProverNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { dppProvider } from '../../provider.js'
+import { shieldedProvider } from '../../provider.js'
 
 /**
  * Reusable Orchard prover holding the Halo 2 proving key. Building it is
@@ -26,7 +26,7 @@ export class OrchardProverWASM {
 
   async init(): Promise<void>  {
     if (OrchardProverWASM._initPromise == null) {
-      OrchardProverWASM._initPromise = dppProvider.shielded.OrchardProverNAPI.init()
+      OrchardProverWASM._initPromise = shieldedProvider.shielded.OrchardProverNAPI.init()
         .catch((e: Error) => {
           OrchardProverWASM._initPromise = null
           throw e

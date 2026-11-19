@@ -1,4 +1,4 @@
-import { dppProvider } from '../../provider.js'
+import { shieldedProvider } from '../../provider.js'
 import { IdentifierLike, PlatformVersionLike, VerifiedMostRecentShieldedAnchor } from '../../types.js'
 import { identifierToBytes, platformVersionToNumber } from '../../utils.js'
 
@@ -9,7 +9,7 @@ export function verifyMostRecentShieldedAnchorProof (
   platformVersion: PlatformVersionLike,
   tokenId?: IdentifierLike | null
 ): VerifiedMostRecentShieldedAnchor {
-  const result = dppProvider.shielded.verifyMostRecentShieldedAnchorProof(
+  const result = shieldedProvider.shielded.verifyMostRecentShieldedAnchorProof(
     proof,
     verifySubsetOfProof,
     platformVersionToNumber(platformVersion),

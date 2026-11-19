@@ -1,5 +1,5 @@
 import type { IncomingViewingKeyNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { dppProvider } from '../../provider.js'
+import { shieldedProvider } from '../../provider.js'
 import { ScopeLike } from '../../types.js'
 import { valueToShieldedDynamicValue } from '../../utils.js'
 import { FullViewingKeyWASM } from './FullViewingKey.js'
@@ -42,7 +42,7 @@ export class IncomingViewingKeyWASM {
     scope?: ScopeLike
   ): IncomingViewingKeyWASM {
     return IncomingViewingKeyWASM.createFromRawInstance(
-      dppProvider.shielded.IncomingViewingKeyNAPI.fromSeed(
+      shieldedProvider.shielded.IncomingViewingKeyNAPI.fromSeed(
         seed,
         coinType,
         account,
@@ -57,7 +57,7 @@ export class IncomingViewingKeyWASM {
     scope?: ScopeLike
   ): IncomingViewingKeyWASM {
     return IncomingViewingKeyWASM.createFromRawInstance(
-      dppProvider.shielded.IncomingViewingKeyNAPI.fromFullViewingKey(
+      shieldedProvider.shielded.IncomingViewingKeyNAPI.fromFullViewingKey(
         fullViewingKey._rawFullViewingKey,
         scope == null ? undefined : valueToShieldedDynamicValue(scope)
       )
@@ -67,7 +67,7 @@ export class IncomingViewingKeyWASM {
   /** Parses an incoming viewing key from its 64-byte raw encoding. */
   static fromBytes (bytes: Uint8Array): IncomingViewingKeyWASM {
     return IncomingViewingKeyWASM.createFromRawInstance(
-      dppProvider.shielded.IncomingViewingKeyNAPI.fromBytes(bytes)
+      shieldedProvider.shielded.IncomingViewingKeyNAPI.fromBytes(bytes)
     )
   }
 

@@ -1,4 +1,4 @@
-import { dppProvider } from '../../provider.js'
+import { shieldedProvider } from '../../provider.js'
 import { IdentifierLike, PlatformVersionLike, VerifiedShieldedPoolState } from '../../types.js'
 import { identifierToBytes, platformVersionToNumber } from '../../utils.js'
 
@@ -9,7 +9,7 @@ export function verifyShieldedPoolStateProof (
   platformVersion: PlatformVersionLike,
   tokenId?: IdentifierLike | null
 ): VerifiedShieldedPoolState {
-  const result = dppProvider.shielded.verifyShieldedPoolStateProof(
+  const result = shieldedProvider.shielded.verifyShieldedPoolStateProof(
     proof,
     verifySubsetOfProof,
     platformVersionToNumber(platformVersion),

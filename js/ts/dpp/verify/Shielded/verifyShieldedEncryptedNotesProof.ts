@@ -1,4 +1,4 @@
-import { dppProvider } from '../../provider.js'
+import { shieldedProvider } from '../../provider.js'
 import { IdentifierLike, PlatformVersionLike, VerifiedShieldedEncryptedNotes } from '../../types.js'
 import { identifierToBytes, platformVersionToNumber } from '../../utils.js'
 
@@ -12,7 +12,7 @@ export function verifyShieldedEncryptedNotesProof (
   platformVersion: PlatformVersionLike,
   tokenId?: IdentifierLike | null
 ): VerifiedShieldedEncryptedNotes {
-  const result = dppProvider.shielded.verifyShieldedEncryptedNotesProof(
+  const result = shieldedProvider.shielded.verifyShieldedEncryptedNotesProof(
     proof,
     startIndex.toString(),
     count,

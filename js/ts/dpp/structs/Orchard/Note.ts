@@ -1,5 +1,5 @@
 import type { NoteNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { dppProvider } from '../../provider.js'
+import { shieldedProvider } from '../../provider.js'
 import { OrchardAddressWASM } from './OrchardAddress.js'
 
 export class NoteWASM {
@@ -7,7 +7,7 @@ export class NoteWASM {
   _rawNote: NoteNAPI
 
   constructor (address: OrchardAddressWASM, value: bigint, rho: Uint8Array, rseed: Uint8Array) {
-    this._rawNote = new dppProvider.shielded.NoteNAPI(
+    this._rawNote = new shieldedProvider.shielded.NoteNAPI(
       address._rawOrchardAddress,
       value.toString(),
       rho,

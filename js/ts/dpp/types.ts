@@ -1,16 +1,18 @@
 import type * as ShieldedNapi from 'dash-platform-shielded/bindingsTypes'
 
-export type ScopeLike = ShieldedNapi.ScopeNAPI | keyof typeof ShieldedNapi.ScopeNAPI | Lowercase<keyof typeof ShieldedNapi.ScopeNAPI>
+/** Anything that can expose raw identifier bytes. */
+export type IdentifierLike = Uint8Array | { bytes(): Uint8Array }
 
-export type {
-  DashPlatformProtocol,
-  IdentifierLike,
-  NetworkLike,
-  PlatformAddressLike,
-  PlatformVersionLike,
-  PoolingLike,
-  TokenDistributionLike
-} from 'pshenmic-dpp'
+/** Network enum value or its string name (`mainnet` / `testnet`). */
+export type NetworkLike = number | string
+
+/** Platform version number or `platform_vN` string. */
+export type PlatformVersionLike = number | string
+
+/** Withdrawal pooling strategy value or its string name. */
+export type PoolingLike = number | string
+
+export type ScopeLike = ShieldedNapi.ScopeNAPI | keyof typeof ShieldedNapi.ScopeNAPI | Lowercase<keyof typeof ShieldedNapi.ScopeNAPI>
 
 export interface VerifiedShieldedEncryptedNote {
   cmx: Uint8Array
