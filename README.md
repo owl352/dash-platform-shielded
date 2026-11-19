@@ -1,39 +1,42 @@
 # dash-platform-shielded
 
-Optional **Orchard/Halo 2 shielded proving engine** for
+The shielded (Orchard/Halo 2) engine for
 [`pshenmic-dpp`](https://github.com/owl352/pshenmic-dpp), as a **separate
-repository**. The base package stays small and loads **without cross-origin
-isolation**; proving is opt-in.
+repository**. It owns the complete shielded surface: proving, the Orchard data
+classes, the shielded state-transition wrappers, and GroveDB shielded-pool
+verification. The base package stays small and loads **without cross-origin
+isolation**.
 
 ## How it plugs in
 
-This package is opt-in: installing it means the app uses shielded proving, so the
-default entry **eagerly loads** the proving module (native Node-API addon on Node,
-threaded wasm elsewhere) and exports its NAPI surface. The consumer hands it to
-`pshenmic-dpp` explicitly with `setShielded()`:
+This package is completely independent of `pshenmic-dpp`. Importing it does not
+load anything; create an instance when shielded proving is needed and pass it to
+the SDK:
 
 ```js
-import shielded from 'dash-platform-shielded'
-import { setShielded, ShieldedBuilderWASM } from 'pshenmic-dpp'
+import { DashPlatformShielded } from 'dash-platform-shielded'
+import { DashPlatformSDK } from 'dash-platform-sdk'
 
-setShielded(shielded)                   // wasm path needs SharedArrayBuffer (COOP/COEP)
-const builder = new ShieldedBuilderWASM()
-await builder.init()
+const sdk = new DashPlatformSDK({
+  network: 'mainnet',
+  shielded: new DashPlatformShielded()   // loads the proving module here
+})
+
+const builder = await sdk.shielded.init()
 ```
 
-Both imports are **static**, so this survives bundler renaming. There is no global
-registry — the consumer wires the two packages together explicitly.
+The constructor loads the proving module: native Node-API addon on Node, threaded
+wasm elsewhere. Only construct it where proving is available: Node, or a
+cross-origin-isolated browser (the wasm path needs `SharedArrayBuffer`).
 
-Because the import itself instantiates the module, only import this entry where
-proving is available: Node, or a cross-origin-isolated browser (the wasm path
-needs `SharedArrayBuffer`). For deferred loading — non-isolated pages, SSR, tests,
-or wasm thread workers — use the lazy entry:
+The instance exposes the wrappers and verify functions directly, and the raw NAPI
+surface via `.napi`. For deferred loading — non-isolated pages, SSR, tests, or wasm
+thread workers — use the lazy entry:
 
 ```js
 import { loadShielded } from 'dash-platform-shielded/lazy'
-import { setShielded } from 'pshenmic-dpp'
 
-setShielded(loadShielded())            // loads now, not at import
+const napi = loadShielded()            // loads now, not at import
 ```
 
 The base ↔ proving boundary is **bytes**: dpp base classes are serialized into
@@ -44,16 +47,24 @@ which needs cross-origin isolation (SharedArrayBuffer).
 
 ## Repository split
 
-This crate owns the **heavy proving bindings** (`src/orchard/`: builder, prover,
-address/note/viewing-key/commitment-tree/spendable-note/shielded-output,
-multi-transfer, signer, note recovery, `enums/scope`). It is **self-contained**:
-it serializes the dashpay `dpp` domain types directly (`src/orchard/serialize.rs`
-+ `napi_utils.rs`) — there is **no `pshenmic-dpp` dependency**. The dashpay `dpp`
-domain library is a direct dependency with `shielded-client`.
+This crate owns the **complete shielded engine**:
 
-`pshenmic-dpp` keeps the base + the lightweight shielded data classes (`memo`,
-`serialized_action`, `transitions`); its heavy shielded modules / `proving`
-feature are the part that moved here.
+- proving bindings (`src/orchard/`: builder, prover, address/note/viewing-key/
+  commitment-tree/spendable-note/shielded-output, multi-transfer, signer, note
+  recovery, `enums/scope`);
+- shielded pool verification (`src/verify/shielded/`: encrypted notes, anchors,
+  most-recent anchor, pool state, notes count, nullifiers);
+- the TypeScript wrappers (`js/ts/`: Orchard structs, shielded transitions,
+  verify functions).
+
+The proving core is **self-contained**: it serializes the dashpay `dpp` domain
+types directly (`src/orchard/serialize.rs` + `napi_utils.rs`). The TS wrappers
+compose the base `pshenmic-dpp` classes (the package is optional; dpp never
+imports it).
+
+`pshenmic-dpp` keeps its base protocol and the low-level shielded transition NAPI
+primitives used by its state-transition/batch code. It has no dependency on this
+package and does not re-export it.
 
 ## Layout
 
@@ -63,7 +74,8 @@ src/            Rust crate source (pure Rust)
   enums/scope.rs
   lib.rs        #![no_main] pub mod orchard/enums
 js/             JS source (copied to dist/, mirroring pshenmic-dpp's layout)
-  src/          entry API: index.cjs (eager) + lazy.cjs (deferred) -> dist/src/
+  src/          entry API: index.js (DashPlatformShielded) + lazy.js -> dist/src/
+  ts/           TypeScript wrappers + verify functions -> dist/ts/
   binaries/     napi glue: loader.cjs (loadShielded), memory.cjs (shared memory),
                 base122.cjs (decoder) -> dist/binaries/
 utils/          imported build helpers: convertBinary, buildWorkerBundle, base122,
@@ -110,8 +122,8 @@ regenerates `dist/binaries/bindingsTypes.d.ts`.
 Two levels (plain Node scripts — Node provides `SharedArrayBuffer`):
 
 ```sh
-npm test                 # standalone: eager entry + lazy loader + wasm/native instantiation + proving-key build (no dpp)
-npm run test:integration # dpp + shielded: setShielded(shielded) + a REAL shielded transition across the boundary
+npm test                 # standalone: DashPlatformShielded + lazy loader + wasm/native instantiation + proving-key build (no dpp)
+npm run test:integration # dpp base + shielded wrappers: a REAL shielded transition across the boundary
 ```
 
 `test:integration` needs a **built** pshenmic-dpp (`dist/` with the base wasm);
@@ -120,8 +132,8 @@ transition fields + byte round-trips (proofs are OsRng-randomized, so literal
 proof bytes are never compared).
 
 Testing strategy for the split: test **each side strictly** — the shielded module
-standalone (real proving), dpp base + its JS layer (the JS wrappers can be exercised against
-a **mock** shielded module passed to `setShielded()`, no real proving needed) —
+standalone (real proving), dpp base + the shielded wrappers (the wrappers can be exercised
+against a **mock** shielded NAPI surface, no real proving needed) —
 plus this cross-repo integration test. In browsers, proving additionally needs
 cross-origin isolation (`COOP: same-origin` + `COEP: require-corp`); the dpp e2e
 harness covers the COOP/popup matrix.

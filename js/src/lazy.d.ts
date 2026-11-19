@@ -1,3 +1,2 @@
-// Deferred entry (lazy.cjs): call loadShielded() to instantiate the proving
-// module, then pass it to pshenmic-dpp's setShielded().
-export declare function loadShielded (): typeof import('../binaries/bindingsTypes.js')
+// Deferred entry: wrappers plus an explicit loadShielded().
+export * from '../ts/index.js'

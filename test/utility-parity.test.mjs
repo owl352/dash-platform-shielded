@@ -14,9 +14,9 @@
 // fromBigIntString/isBigInt. Run on the rebuilt shielded wasm, no dpp required:
 //   node test/utility-parity.test.mjs
 import assert from 'node:assert/strict'
-import shielded from '../dist/src/index.cjs'
+import { loadShielded } from '../dist/src/index.js'
 
-const DV = shielded.DynamicValue
+const DV = loadShielded().DynamicValue
 assert.ok(DV, 'the shielded module must expose the ported DynamicValue napi class')
 
 const toHex = (b) => Array.from(b).map((x) => x.toString(16).padStart(2, '0')).join('')
