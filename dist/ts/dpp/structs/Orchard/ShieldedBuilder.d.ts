@@ -1,113 +1,57 @@
-import type { PlatformVersionNAPI } from 'pshenmic-dpp/bindingsTypes';
-import type { ShieldedBuilderNAPI } from 'dash-platform-shielded/bindingsTypes';
-import { IdentifierLike, PlatformAddressLike, PoolingLike, TokenDistributionLike } from '../../types.js';
-import { IdentityWASM } from 'pshenmic-dpp';
-import { IdentityPublicKeyWASM } from 'pshenmic-dpp';
-import { GroupStateTransitionInfoWASM } from 'pshenmic-dpp';
-import { TokenShieldedPaymentWASM } from 'pshenmic-dpp';
+import type { IdentityCreateFromShieldedPoolResultNAPI, ShieldedBuilderNAPI, ShieldedWithdrawalResultNAPI } from 'dash-platform-shielded/bindingsTypes';
+import type { PlatformVersionLike, PoolingLike } from '../../types.js';
 import { OrchardAddressWASM } from './OrchardAddress.js';
-import { ShieldedMemoWASM } from './ShieldedMemo.js';
-import { SpendableNoteWASM } from './SpendableNote.js';
-import { ShieldedWithdrawalResultWASM } from './ShieldedWithdrawalResult.js';
 import { ShieldedOutputWASM } from './ShieldedOutput.js';
-import { AssetLockProofWASM } from 'pshenmic-dpp';
-import { PrivateKeyWASM } from 'pshenmic-dpp';
-import { CoreScriptWASM } from 'pshenmic-dpp';
-import { StateTransitionWASM } from 'pshenmic-dpp';
-import { InputAddressWASM } from 'pshenmic-dpp';
-import { AddressFundsFeeStrategyStepWASM } from 'pshenmic-dpp';
-import { IdentityPublicKeyInCreationWASM } from 'pshenmic-dpp';
-import { IdentityCreateFromShieldedPoolResultWASM } from './IdentityCreateFromShieldedPoolResult.js';
+import type { SpendableNoteWASM } from './SpendableNote.js';
+export declare class ShieldedWithdrawalResult {
+    readonly stateTransition: Uint8Array;
+    readonly fee: bigint;
+    constructor(raw: ShieldedWithdrawalResultNAPI);
+}
+export declare class IdentityCreateFromShieldedPoolResult {
+    readonly publicKeys: Uint8Array[];
+    readonly identityId: Uint8Array;
+    readonly predictedFee: bigint;
+    readonly actions: Uint8Array[];
+    readonly anchor: Uint8Array;
+    readonly proof: Uint8Array;
+    readonly bindingsSignature: Uint8Array;
+    constructor(raw: IdentityCreateFromShieldedPoolResultNAPI);
+}
+type Amount = bigint | number | string;
 /**
- * Builds and proves shielded (Orchard) state transitions. Construction builds
- * the Halo 2 proving key (~seconds), so create one instance and reuse it.
+ * Builds and proves shielded (Orchard) state transitions. This wrapper is
+ * dpp-free: all dpp-side data crosses as bytes/primitives, and the returned
+ * state transition is consensus bytes. The consumer wraps the bytes.
  *
- * The proving module is loaded when a `DashPlatformShielded` instance is
- * constructed (or lazily on first use). The browser wasm path needs cross-origin
- * isolation; Node uses the native addon.
- *
- * Deposits (`shield`, `shieldFromAssetLock`) don't need pool notes. Spends
- * (`shieldedWithdrawal`, `unshield`, `shieldedTransfer`) need a `SpendableNote`
- * witnessed against an on-chain anchor — rebuild the tree from the full pool
- * note set (getShieldedEncryptedNotes) with `CommitmentTreeWASM`.
+ * Construction builds the Halo 2 proving key (~seconds), so create one instance
+ * and reuse it.
  */
 export declare class ShieldedBuilderWASM {
     /** @private **/
     _rawShieldedBuilder: ShieldedBuilderNAPI;
-    /**
-     * Building the Halo 2 proving key takes ~10s, and the key is deterministic,
-     * so it's built once per process: every builder instance shares the same
-     * raw builder. Cleared on failure so a failed init can be retried.
-     */
     private static _initPromise;
     constructor();
     init(): Promise<void>;
-    /** Asset lock -> pool (deposit). */
-    shieldFromAssetLock(recipient: OrchardAddressWASM, shieldAmount: bigint, assetLockProof: AssetLockProofWASM, privateKey: PrivateKeyWASM, memo: ShieldedMemoWASM, dummyOutputs: number, senderOvk?: Uint8Array, surplusOutput?: PlatformAddressLike, platformVersion?: PlatformVersionNAPI): Promise<StateTransitionWASM>;
-    /** Transparent platform addresses -> pool (deposit). One private key per input. */
-    shield(recipient: OrchardAddressWASM, shieldAmount: bigint, inputs: InputAddressWASM[], privateKeys: PrivateKeyWASM[], feeStrategy: AddressFundsFeeStrategyStepWASM[], userFeeIncrease: number, memo: ShieldedMemoWASM, senderOvk?: Uint8Array, platformVersion?: PlatformVersionNAPI): Promise<StateTransitionWASM>;
-    /** Pool -> core L1 (spend). */
-    shieldedWithdrawal(spends: SpendableNoteWASM[], withdrawalAmount: bigint, outputScript: CoreScriptWASM, coreFeePerByte: number, pooling: PoolingLike, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: ShieldedMemoWASM, platformVersion?: PlatformVersionNAPI): Promise<ShieldedWithdrawalResultWASM>;
-    /** Pool -> platform identity balance (spend). */
-    unshield(spends: SpendableNoteWASM[], outputAddress: PlatformAddressLike, unshieldAmount: bigint, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: ShieldedMemoWASM, platformVersion?: PlatformVersionNAPI): Promise<ShieldedWithdrawalResultWASM>;
-    /** Pool -> pool (spend). */
-    shieldedTransfer(spends: SpendableNoteWASM[], recipient: OrchardAddressWASM, transferAmount: bigint, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: ShieldedMemoWASM, platformVersion?: PlatformVersionNAPI): Promise<ShieldedWithdrawalResultWASM>;
-    /**
-     * Pool -> pool, paying several Orchard addresses in one proof.
-     *
-     * The spend side matches `shieldedTransfer` — every note must belong to the
-     * `seed`/`coinType`/`account` this call derives its spend authority from, and
-     * all must be witnessed against the same `anchor`. The output side is a list,
-     * each entry carrying its own amount and memo, and the leftover always goes
-     * to `changeAddress` (a zero-value change note is still written, which keeps
-     * the fee predictable before the change amount is known).
-     *
-     * Consensus prices the fee off the bundle's action count, which Orchard sets
-     * to `max(spends, outputs + 1, 2)` and caps at 16 — so a fan-out of 15
-     * recipients is the ceiling, and each extra action adds proving time. Passing
-     * more throws before proving rather than after.
-     */
-    shieldedTransferMulti(spends: SpendableNoteWASM[], outputs: ShieldedOutputWASM[], changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, platformVersion?: PlatformVersionNAPI): Promise<ShieldedWithdrawalResultWASM>;
-    /** Pool -> new identity (spend). One private key per public key, same order. */
-    identityCreateFromShieldedPool(publicKeys: IdentityPublicKeyInCreationWASM[], privateKeys: PrivateKeyWASM[], denomination: bigint, sendToAddressOnCreationFailure: PlatformAddressLike, spends: SpendableNoteWASM[], changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: ShieldedMemoWASM, platformVersion?: PlatformVersionNAPI): Promise<IdentityCreateFromShieldedPoolResultWASM>;
-    /** Identity balance -> shielded pool, signed with a transfer key of the identity **/
-    shieldFromIdentity(identity: IdentityWASM, recipient: OrchardAddressWASM, shieldAmount: bigint, nonce: bigint, signingKey: IdentityPublicKeyWASM, privateKey: PrivateKeyWASM, userFeeIncrease: number, memo: ShieldedMemoWASM, senderOvk?: Uint8Array, platformVersion?: PlatformVersionNAPI): Promise<StateTransitionWASM>;
-    /** Shielded pool -> identity balance (a spend); resolves with the transition and its fee **/
-    identityTopUpFromShieldedPool(spends: SpendableNoteWASM[], identityId: IdentifierLike, topUpAmount: bigint, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: ShieldedMemoWASM, platformVersion?: PlatformVersionNAPI): Promise<ShieldedWithdrawalResultWASM>;
-    /**
-     * The shielded payment of a document's token cost, spent from the token's shielded pool.
-     * Set it as `TokenPaymentInfo.shieldedPayment` of the document transition
-     **/
-    documentTokenPayment(tokenId: IdentifierLike, ownerId: IdentifierLike, dataContractId: IdentifierLike, documentId: IdentifierLike, spends: SpendableNoteWASM[], amount: bigint, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: ShieldedMemoWASM, platformVersion?: PlatformVersionNAPI): Promise<TokenShieldedPaymentWASM>;
-    /** Owner token balance -> token shielded pool, signed with `identityPublicKey` **/
-    tokenShield(tokenId: IdentifierLike, ownerId: IdentifierLike, dataContractId: IdentifierLike, tokenContractPosition: number, recipient: OrchardAddressWASM, amount: bigint, memo: ShieldedMemoWASM, senderOvk: Uint8Array | undefined, identityPublicKey: IdentityPublicKeyWASM, privateKey: PrivateKeyWASM, identityContractNonce: bigint, userFeeIncrease: number, platformVersion?: PlatformVersionNAPI): Promise<StateTransitionWASM>;
-    /** Token shielded pool -> `recipientId`'s token balance, signed with `identityPublicKey` **/
-    tokenUnshield(tokenId: IdentifierLike, ownerId: IdentifierLike, dataContractId: IdentifierLike, tokenContractPosition: number, spends: SpendableNoteWASM[], recipientId: IdentifierLike, amount: bigint, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: ShieldedMemoWASM, identityPublicKey: IdentityPublicKeyWASM, privateKey: PrivateKeyWASM, identityContractNonce: bigint, userFeeIncrease: number, platformVersion?: PlatformVersionNAPI): Promise<StateTransitionWASM>;
-    /** Token shielded pool -> token shielded pool, signed with `identityPublicKey` **/
-    tokenShieldedTransfer(tokenId: IdentifierLike, ownerId: IdentifierLike, dataContractId: IdentifierLike, tokenContractPosition: number, spends: SpendableNoteWASM[], recipient: OrchardAddressWASM, transferAmount: bigint, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: ShieldedMemoWASM, identityPublicKey: IdentityPublicKeyWASM, privateKey: PrivateKeyWASM, identityContractNonce: bigint, userFeeIncrease: number, platformVersion?: PlatformVersionNAPI): Promise<StateTransitionWASM>;
-    /** New tokens minted into the token shielded pool; pass `usingGroupInfo` for a group action **/
-    tokenMintToPool(tokenId: IdentifierLike, ownerId: IdentifierLike, dataContractId: IdentifierLike, tokenContractPosition: number, recipient: OrchardAddressWASM, amount: bigint, memo: ShieldedMemoWASM, senderOvk: Uint8Array | undefined, publicNote: string | undefined, usingGroupInfo: GroupStateTransitionInfoWASM | undefined, identityPublicKey: IdentityPublicKeyWASM, privateKey: PrivateKeyWASM, identityContractNonce: bigint, userFeeIncrease: number, platformVersion?: PlatformVersionNAPI): Promise<StateTransitionWASM>;
-    /** Tokens burned out of the token shielded pool; pass `usingGroupInfo` for a group action **/
-    tokenBurnFromPool(tokenId: IdentifierLike, ownerId: IdentifierLike, dataContractId: IdentifierLike, tokenContractPosition: number, spends: SpendableNoteWASM[], amount: bigint, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: ShieldedMemoWASM, publicNote: string | undefined, usingGroupInfo: GroupStateTransitionInfoWASM | undefined, identityPublicKey: IdentityPublicKeyWASM, privateKey: PrivateKeyWASM, identityContractNonce: bigint, userFeeIncrease: number, platformVersion?: PlatformVersionNAPI): Promise<StateTransitionWASM>;
-    /** A token distribution claimed into the token shielded pool; a perpetual claim must pass `claimUpTo` **/
-    tokenClaimToPool(tokenId: IdentifierLike, ownerId: IdentifierLike, dataContractId: IdentifierLike, tokenContractPosition: number, recipient: OrchardAddressWASM, amount: bigint, distributionType: TokenDistributionLike, claimUpTo: bigint | undefined, memo: ShieldedMemoWASM, senderOvk: Uint8Array | undefined, publicNote: string | undefined, identityPublicKey: IdentityPublicKeyWASM, privateKey: PrivateKeyWASM, identityContractNonce: bigint, userFeeIncrease: number, platformVersion?: PlatformVersionNAPI): Promise<StateTransitionWASM>;
-    /** Tokens bought at their direct purchase price into the token shielded pool **/
-    tokenDirectPurchaseToPool(tokenId: IdentifierLike, ownerId: IdentifierLike, dataContractId: IdentifierLike, tokenContractPosition: number, recipient: OrchardAddressWASM, tokenCount: bigint, totalAgreedPrice: bigint, memo: ShieldedMemoWASM, senderOvk: Uint8Array | undefined, identityPublicKey: IdentityPublicKeyWASM, privateKey: PrivateKeyWASM, identityContractNonce: bigint, userFeeIncrease: number, platformVersion?: PlatformVersionNAPI): Promise<StateTransitionWASM>;
-    /**
-     * Tokens move inside the token shielded pool, the fee is paid from the credit shielded
-     * pool (no identity signs). Token and fee notes are spent with the same seed account, each
-     * against its own pool's anchor. Resolves with the transition and its fee
-     **/
-    tokenShieldedTransferWithShieldedFee(tokenId: IdentifierLike, dataContractId: IdentifierLike, tokenContractPosition: number, tokenSpends: SpendableNoteWASM[], tokenChangeAddress: OrchardAddressWASM, tokenAnchor: Uint8Array, recipient: OrchardAddressWASM, transferAmount: bigint, feeSpends: SpendableNoteWASM[], feeChangeAddress: OrchardAddressWASM, feeAnchor: Uint8Array, seed: Uint8Array, coinType: number, account: number, memo: ShieldedMemoWASM, platformVersion?: PlatformVersionNAPI): Promise<ShieldedWithdrawalResultWASM>;
-    /**
-     * Tokens leave the token shielded pool for `recipientId`'s balance, the fee is paid from the
-     * credit shielded pool. Resolves with the transition and its fee
-     **/
-    tokenUnshieldWithShieldedFee(tokenId: IdentifierLike, dataContractId: IdentifierLike, tokenContractPosition: number, tokenSpends: SpendableNoteWASM[], tokenChangeAddress: OrchardAddressWASM, tokenAnchor: Uint8Array, recipientId: IdentifierLike, amount: bigint, feeSpends: SpendableNoteWASM[], feeChangeAddress: OrchardAddressWASM, feeAnchor: Uint8Array, seed: Uint8Array, coinType: number, account: number, memo: ShieldedMemoWASM, platformVersion?: PlatformVersionNAPI): Promise<ShieldedWithdrawalResultWASM>;
-    /**
-     * Tokens bought at their direct purchase price into the token shielded pool, price and fee
-     * paid from the credit shielded pool. `recipient` must belong to the seed account.
-     * Resolves with the transition and its fee
-     **/
-    tokenPurchaseFromShieldedPool(tokenId: IdentifierLike, dataContractId: IdentifierLike, tokenContractPosition: number, recipient: OrchardAddressWASM, tokenCount: bigint, totalAgreedPrice: bigint, feeSpends: SpendableNoteWASM[], feeChangeAddress: OrchardAddressWASM, feeAnchor: Uint8Array, seed: Uint8Array, coinType: number, account: number, memo: ShieldedMemoWASM, platformVersion?: PlatformVersionNAPI): Promise<ShieldedWithdrawalResultWASM>;
+    shieldFromAssetLock(recipient: OrchardAddressWASM, shieldAmount: Amount, assetLockProof: Uint8Array, privateKey: Uint8Array, memo: Uint8Array, dummyOutputs: number, senderOvk?: Uint8Array, surplusOutput?: Uint8Array, platformVersion?: PlatformVersionLike): Promise<Uint8Array>;
+    shield(recipient: OrchardAddressWASM, shieldAmount: Amount, inputs: Uint8Array[], privateKeys: Uint8Array[], feeStrategy: Uint8Array[], userFeeIncrease: number, memo: Uint8Array, senderOvk?: Uint8Array, platformVersion?: PlatformVersionLike): Promise<Uint8Array>;
+    shieldedWithdrawal(spends: SpendableNoteWASM[], withdrawalAmount: Amount, outputScript: Uint8Array, coreFeePerByte: number, pooling: PoolingLike, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: Uint8Array, platformVersion?: PlatformVersionLike): Promise<ShieldedWithdrawalResult>;
+    unshield(spends: SpendableNoteWASM[], outputAddress: Uint8Array, unshieldAmount: Amount, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: Uint8Array, platformVersion?: PlatformVersionLike): Promise<ShieldedWithdrawalResult>;
+    shieldedTransfer(spends: SpendableNoteWASM[], recipient: OrchardAddressWASM, transferAmount: Amount, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: Uint8Array, platformVersion?: PlatformVersionLike): Promise<ShieldedWithdrawalResult>;
+    shieldedTransferMulti(spends: SpendableNoteWASM[], outputs: ShieldedOutputWASM[], changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, platformVersion?: PlatformVersionLike): Promise<ShieldedWithdrawalResult>;
+    identityCreateFromShieldedPool(publicKeys: Uint8Array[], privateKeys: Uint8Array[], denomination: Amount, sendToAddressOnCreationFailure: Uint8Array, spends: SpendableNoteWASM[], changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: Uint8Array, platformVersion?: PlatformVersionLike): Promise<IdentityCreateFromShieldedPoolResult>;
+    shieldFromIdentity(identity: Uint8Array, recipient: OrchardAddressWASM, shieldAmount: Amount, nonce: Amount, signingKey: Uint8Array, privateKey: Uint8Array, userFeeIncrease: number, memo: Uint8Array, senderOvk?: Uint8Array, platformVersion?: PlatformVersionLike): Promise<Uint8Array>;
+    identityTopUpFromShieldedPool(spends: SpendableNoteWASM[], identityId: Uint8Array, topUpAmount: Amount, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: Uint8Array, platformVersion?: PlatformVersionLike): Promise<ShieldedWithdrawalResult>;
+    documentTokenPayment(tokenId: Uint8Array, ownerId: Uint8Array, dataContractId: Uint8Array, documentId: Uint8Array, spends: SpendableNoteWASM[], amount: Amount, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: Uint8Array, platformVersion?: PlatformVersionLike): Promise<Uint8Array>;
+    tokenShield(tokenId: Uint8Array, ownerId: Uint8Array, dataContractId: Uint8Array, tokenContractPosition: number, recipient: OrchardAddressWASM, amount: Amount, memo: Uint8Array, senderOvk: Uint8Array | undefined | null, identityPublicKey: Uint8Array, privateKey: Uint8Array, identityContractNonce: Amount, userFeeIncrease: number, platformVersion?: PlatformVersionLike): Promise<Uint8Array>;
+    tokenUnshield(tokenId: Uint8Array, ownerId: Uint8Array, dataContractId: Uint8Array, tokenContractPosition: number, spends: SpendableNoteWASM[], recipientId: Uint8Array, amount: Amount, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: Uint8Array, identityPublicKey: Uint8Array, privateKey: Uint8Array, identityContractNonce: Amount, userFeeIncrease: number, platformVersion?: PlatformVersionLike): Promise<Uint8Array>;
+    tokenShieldedTransfer(tokenId: Uint8Array, ownerId: Uint8Array, dataContractId: Uint8Array, tokenContractPosition: number, spends: SpendableNoteWASM[], recipient: OrchardAddressWASM, transferAmount: Amount, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: Uint8Array, identityPublicKey: Uint8Array, privateKey: Uint8Array, identityContractNonce: Amount, userFeeIncrease: number, platformVersion?: PlatformVersionLike): Promise<Uint8Array>;
+    tokenMintToPool(tokenId: Uint8Array, ownerId: Uint8Array, dataContractId: Uint8Array, tokenContractPosition: number, recipient: OrchardAddressWASM, amount: Amount, memo: Uint8Array, senderOvk: Uint8Array | undefined | null, publicNote: string | undefined | null, usingGroupInfo: Uint8Array | undefined | null, identityPublicKey: Uint8Array, privateKey: Uint8Array, identityContractNonce: Amount, userFeeIncrease: number, platformVersion?: PlatformVersionLike): Promise<Uint8Array>;
+    tokenBurnFromPool(tokenId: Uint8Array, ownerId: Uint8Array, dataContractId: Uint8Array, tokenContractPosition: number, spends: SpendableNoteWASM[], amount: Amount, changeAddress: OrchardAddressWASM, seed: Uint8Array, coinType: number, account: number, anchor: Uint8Array, memo: Uint8Array, publicNote: string | undefined | null, usingGroupInfo: Uint8Array | undefined | null, identityPublicKey: Uint8Array, privateKey: Uint8Array, identityContractNonce: Amount, userFeeIncrease: number, platformVersion?: PlatformVersionLike): Promise<Uint8Array>;
+    tokenClaimToPool(tokenId: Uint8Array, ownerId: Uint8Array, dataContractId: Uint8Array, tokenContractPosition: number, recipient: OrchardAddressWASM, amount: Amount, distributionType: string | number, claimUpTo: Amount | undefined | null, memo: Uint8Array, senderOvk: Uint8Array | undefined | null, publicNote: string | undefined | null, identityPublicKey: Uint8Array, privateKey: Uint8Array, identityContractNonce: Amount, userFeeIncrease: number, platformVersion?: PlatformVersionLike): Promise<Uint8Array>;
+    tokenDirectPurchaseToPool(tokenId: Uint8Array, ownerId: Uint8Array, dataContractId: Uint8Array, tokenContractPosition: number, recipient: OrchardAddressWASM, tokenCount: Amount, totalAgreedPrice: Amount, memo: Uint8Array, senderOvk: Uint8Array | undefined | null, identityPublicKey: Uint8Array, privateKey: Uint8Array, identityContractNonce: Amount, userFeeIncrease: number, platformVersion?: PlatformVersionLike): Promise<Uint8Array>;
+    tokenShieldedTransferWithShieldedFee(tokenId: Uint8Array, dataContractId: Uint8Array, tokenContractPosition: number, tokenSpends: SpendableNoteWASM[], tokenChangeAddress: OrchardAddressWASM, tokenAnchor: Uint8Array, recipient: OrchardAddressWASM, transferAmount: Amount, feeSpends: SpendableNoteWASM[], feeChangeAddress: OrchardAddressWASM, feeAnchor: Uint8Array, seed: Uint8Array, coinType: number, account: number, memo: Uint8Array, platformVersion?: PlatformVersionLike): Promise<ShieldedWithdrawalResult>;
+    tokenUnshieldWithShieldedFee(tokenId: Uint8Array, dataContractId: Uint8Array, tokenContractPosition: number, tokenSpends: SpendableNoteWASM[], tokenChangeAddress: OrchardAddressWASM, tokenAnchor: Uint8Array, recipientId: Uint8Array, amount: Amount, feeSpends: SpendableNoteWASM[], feeChangeAddress: OrchardAddressWASM, feeAnchor: Uint8Array, seed: Uint8Array, coinType: number, account: number, memo: Uint8Array, platformVersion?: PlatformVersionLike): Promise<ShieldedWithdrawalResult>;
+    tokenPurchaseFromShieldedPool(tokenId: Uint8Array, dataContractId: Uint8Array, tokenContractPosition: number, recipient: OrchardAddressWASM, tokenCount: Amount, totalAgreedPrice: Amount, feeSpends: SpendableNoteWASM[], feeChangeAddress: OrchardAddressWASM, feeAnchor: Uint8Array, seed: Uint8Array, coinType: number, account: number, memo: Uint8Array, platformVersion?: PlatformVersionLike): Promise<ShieldedWithdrawalResult>;
 }
+export {};

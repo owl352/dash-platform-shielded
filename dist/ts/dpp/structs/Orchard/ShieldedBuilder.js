@@ -1,38 +1,51 @@
-import { dppProvider } from '../../provider.js';
-import { IdentifierWASM } from 'pshenmic-dpp';
-import { TokenShieldedPaymentWASM } from 'pshenmic-dpp';
-import { ShieldedWithdrawalResultWASM } from './ShieldedWithdrawalResult.js';
-import { PlatformAddressWASM } from 'pshenmic-dpp';
-import { StateTransitionWASM } from 'pshenmic-dpp';
-import { IdentityCreateFromShieldedPoolResultWASM } from './IdentityCreateFromShieldedPoolResult.js';
+import { shieldedProvider } from '../../provider.js';
+import { platformVersionToNumber } from '../../utils.js';
+export class ShieldedWithdrawalResult {
+    stateTransition;
+    fee;
+    constructor(raw) {
+        this.stateTransition = raw.stateTransition;
+        this.fee = BigInt(raw.fee);
+    }
+}
+export class IdentityCreateFromShieldedPoolResult {
+    publicKeys;
+    identityId;
+    predictedFee;
+    actions;
+    anchor;
+    proof;
+    bindingsSignature;
+    constructor(raw) {
+        this.publicKeys = raw.publicKeys;
+        this.identityId = raw.identityId;
+        this.predictedFee = BigInt(raw.predictedFee);
+        this.actions = raw.actions;
+        this.anchor = raw.anchor;
+        this.proof = raw.proof;
+        this.bindingsSignature = raw.bindingsSignature;
+    }
+}
+const amountString = (value) => value.toString();
+const version = (value) => value == null ? undefined : platformVersionToNumber(value);
 /**
- * Builds and proves shielded (Orchard) state transitions. Construction builds
- * the Halo 2 proving key (~seconds), so create one instance and reuse it.
+ * Builds and proves shielded (Orchard) state transitions. This wrapper is
+ * dpp-free: all dpp-side data crosses as bytes/primitives, and the returned
+ * state transition is consensus bytes. The consumer wraps the bytes.
  *
- * The proving module is loaded when a `DashPlatformShielded` instance is
- * constructed (or lazily on first use). The browser wasm path needs cross-origin
- * isolation; Node uses the native addon.
- *
- * Deposits (`shield`, `shieldFromAssetLock`) don't need pool notes. Spends
- * (`shieldedWithdrawal`, `unshield`, `shieldedTransfer`) need a `SpendableNote`
- * witnessed against an on-chain anchor — rebuild the tree from the full pool
- * note set (getShieldedEncryptedNotes) with `CommitmentTreeWASM`.
+ * Construction builds the Halo 2 proving key (~seconds), so create one instance
+ * and reuse it.
  */
 export class ShieldedBuilderWASM {
     /** @private **/
     _rawShieldedBuilder;
-    /**
-     * Building the Halo 2 proving key takes ~10s, and the key is deterministic,
-     * so it's built once per process: every builder instance shares the same
-     * raw builder. Cleared on failure so a failed init can be retried.
-     */
     static _initPromise = null;
     constructor() {
         // empty
     }
     async init() {
         if (ShieldedBuilderWASM._initPromise == null) {
-            ShieldedBuilderWASM._initPromise = dppProvider.shielded.ShieldedBuilderNAPI.init()
+            ShieldedBuilderWASM._initPromise = shieldedProvider.shielded.ShieldedBuilderNAPI.init()
                 .catch((e) => {
                 ShieldedBuilderWASM._initPromise = null;
                 throw e;
@@ -40,112 +53,64 @@ export class ShieldedBuilderWASM {
         }
         this._rawShieldedBuilder = await ShieldedBuilderWASM._initPromise;
     }
-    /** Asset lock -> pool (deposit). */
     async shieldFromAssetLock(recipient, shieldAmount, assetLockProof, privateKey, memo, dummyOutputs, senderOvk, surplusOutput, platformVersion) {
-        return StateTransitionWASM.fromBytes(await this._rawShieldedBuilder.shieldFromAssetLock(recipient._rawOrchardAddress, shieldAmount.toString(), assetLockProof.bytes(), privateKey.bytes(), memo.toBytes(), dummyOutputs, senderOvk, surplusOutput != null ? new PlatformAddressWASM(surplusOutput).bytes() : undefined, platformVersion));
+        return await this._rawShieldedBuilder.shieldFromAssetLock(recipient._rawOrchardAddress, amountString(shieldAmount), assetLockProof, privateKey, memo, dummyOutputs, senderOvk, surplusOutput, version(platformVersion));
     }
-    /** Transparent platform addresses -> pool (deposit). One private key per input. */
     async shield(recipient, shieldAmount, inputs, privateKeys, feeStrategy, userFeeIncrease, memo, senderOvk, platformVersion) {
-        return StateTransitionWASM.fromBytes(await this._rawShieldedBuilder.shield(recipient._rawOrchardAddress, shieldAmount.toString(), inputs.map(i => i.bytes()), privateKeys.map(k => k.bytes()), feeStrategy.map(s => s.bytes()), userFeeIncrease, memo.toBytes(), senderOvk, platformVersion));
+        return await this._rawShieldedBuilder.shield(recipient._rawOrchardAddress, amountString(shieldAmount), inputs, privateKeys, feeStrategy, userFeeIncrease, memo, senderOvk, version(platformVersion));
     }
-    /** Pool -> core L1 (spend). */
     async shieldedWithdrawal(spends, withdrawalAmount, outputScript, coreFeePerByte, pooling, changeAddress, seed, coinType, account, anchor, memo, platformVersion) {
-        return ShieldedWithdrawalResultWASM.createFromRawInstance(await this._rawShieldedBuilder.shieldedWithdrawal(spends.map(s => s._rawSpendableNote), withdrawalAmount.toString(), outputScript.bytes(), coreFeePerByte, pooling, changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo.toBytes(), platformVersion));
+        return new ShieldedWithdrawalResult(await this._rawShieldedBuilder.shieldedWithdrawal(spends.map(s => s._rawSpendableNote), amountString(withdrawalAmount), outputScript, coreFeePerByte, pooling, changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo, version(platformVersion)));
     }
-    /** Pool -> platform identity balance (spend). */
     async unshield(spends, outputAddress, unshieldAmount, changeAddress, seed, coinType, account, anchor, memo, platformVersion) {
-        return ShieldedWithdrawalResultWASM.createFromRawInstance(await this._rawShieldedBuilder.unshield(spends.map(s => s._rawSpendableNote), new PlatformAddressWASM(outputAddress).bytes(), unshieldAmount.toString(), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo.toBytes(), platformVersion));
+        return new ShieldedWithdrawalResult(await this._rawShieldedBuilder.unshield(spends.map(s => s._rawSpendableNote), outputAddress, amountString(unshieldAmount), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo, version(platformVersion)));
     }
-    /** Pool -> pool (spend). */
     async shieldedTransfer(spends, recipient, transferAmount, changeAddress, seed, coinType, account, anchor, memo, platformVersion) {
-        return ShieldedWithdrawalResultWASM.createFromRawInstance(await this._rawShieldedBuilder.shieldedTransfer(spends.map(s => s._rawSpendableNote), recipient._rawOrchardAddress, transferAmount.toString(), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo.toBytes(), platformVersion));
+        return new ShieldedWithdrawalResult(await this._rawShieldedBuilder.shieldedTransfer(spends.map(s => s._rawSpendableNote), recipient._rawOrchardAddress, amountString(transferAmount), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo, version(platformVersion)));
     }
-    /**
-     * Pool -> pool, paying several Orchard addresses in one proof.
-     *
-     * The spend side matches `shieldedTransfer` — every note must belong to the
-     * `seed`/`coinType`/`account` this call derives its spend authority from, and
-     * all must be witnessed against the same `anchor`. The output side is a list,
-     * each entry carrying its own amount and memo, and the leftover always goes
-     * to `changeAddress` (a zero-value change note is still written, which keeps
-     * the fee predictable before the change amount is known).
-     *
-     * Consensus prices the fee off the bundle's action count, which Orchard sets
-     * to `max(spends, outputs + 1, 2)` and caps at 16 — so a fan-out of 15
-     * recipients is the ceiling, and each extra action adds proving time. Passing
-     * more throws before proving rather than after.
-     */
     async shieldedTransferMulti(spends, outputs, changeAddress, seed, coinType, account, anchor, platformVersion) {
-        return ShieldedWithdrawalResultWASM.createFromRawInstance(await this._rawShieldedBuilder.shieldedTransferMulti(spends.map(s => s._rawSpendableNote), outputs.map(o => o._rawShieldedOutput), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, platformVersion));
+        return new ShieldedWithdrawalResult(await this._rawShieldedBuilder.shieldedTransferMulti(spends.map(s => s._rawSpendableNote), outputs.map(o => o._rawShieldedOutput), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, version(platformVersion)));
     }
-    /** Pool -> new identity (spend). One private key per public key, same order. */
     async identityCreateFromShieldedPool(publicKeys, privateKeys, denomination, sendToAddressOnCreationFailure, spends, changeAddress, seed, coinType, account, anchor, memo, platformVersion) {
-        return IdentityCreateFromShieldedPoolResultWASM.createFromRawInstance(await this._rawShieldedBuilder.identityCreateFromShieldedPool(publicKeys.map(k => k.bytes()), privateKeys.map(k => k.bytes()), denomination.toString(), new PlatformAddressWASM(sendToAddressOnCreationFailure).bytes(), spends.map(s => s._rawSpendableNote), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo.toBytes(), platformVersion));
+        return new IdentityCreateFromShieldedPoolResult(await this._rawShieldedBuilder.identityCreateFromShieldedPool(publicKeys, privateKeys, amountString(denomination), sendToAddressOnCreationFailure, spends.map(s => s._rawSpendableNote), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo, version(platformVersion)));
     }
-    /** Identity balance -> shielded pool, signed with a transfer key of the identity **/
     async shieldFromIdentity(identity, recipient, shieldAmount, nonce, signingKey, privateKey, userFeeIncrease, memo, senderOvk, platformVersion) {
-        return StateTransitionWASM.fromBytes(await this._rawShieldedBuilder.shieldFromIdentity(identity.bytes(), recipient._rawOrchardAddress, shieldAmount.toString(), nonce.toString(), signingKey.bytes(), privateKey.bytes(), userFeeIncrease, memo.toBytes(), senderOvk, platformVersion));
+        return await this._rawShieldedBuilder.shieldFromIdentity(identity, recipient._rawOrchardAddress, amountString(shieldAmount), amountString(nonce), signingKey, privateKey, userFeeIncrease, memo, senderOvk, version(platformVersion));
     }
-    /** Shielded pool -> identity balance (a spend); resolves with the transition and its fee **/
     async identityTopUpFromShieldedPool(spends, identityId, topUpAmount, changeAddress, seed, coinType, account, anchor, memo, platformVersion) {
-        return ShieldedWithdrawalResultWASM.createFromRawInstance(await this._rawShieldedBuilder.identityTopUpFromShieldedPool(spends.map(s => s._rawSpendableNote), new IdentifierWASM(identityId).bytes(), topUpAmount.toString(), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo.toBytes(), platformVersion));
+        return new ShieldedWithdrawalResult(await this._rawShieldedBuilder.identityTopUpFromShieldedPool(spends.map(s => s._rawSpendableNote), identityId, amountString(topUpAmount), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo, version(platformVersion)));
     }
-    /**
-     * The shielded payment of a document's token cost, spent from the token's shielded pool.
-     * Set it as `TokenPaymentInfo.shieldedPayment` of the document transition
-     **/
     async documentTokenPayment(tokenId, ownerId, dataContractId, documentId, spends, amount, changeAddress, seed, coinType, account, anchor, memo, platformVersion) {
-        return TokenShieldedPaymentWASM.fromBytes(await this._rawShieldedBuilder.documentTokenPayment(new IdentifierWASM(tokenId).bytes(), new IdentifierWASM(ownerId).bytes(), new IdentifierWASM(dataContractId).bytes(), new IdentifierWASM(documentId).bytes(), spends.map(s => s._rawSpendableNote), amount.toString(), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo.toBytes(), platformVersion));
+        return await this._rawShieldedBuilder.documentTokenPayment(tokenId, ownerId, dataContractId, documentId, spends.map(s => s._rawSpendableNote), amountString(amount), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo, version(platformVersion));
     }
-    /** Owner token balance -> token shielded pool, signed with `identityPublicKey` **/
     async tokenShield(tokenId, ownerId, dataContractId, tokenContractPosition, recipient, amount, memo, senderOvk, identityPublicKey, privateKey, identityContractNonce, userFeeIncrease, platformVersion) {
-        return StateTransitionWASM.fromBytes(await this._rawShieldedBuilder.tokenShield(new IdentifierWASM(tokenId).bytes(), new IdentifierWASM(ownerId).bytes(), new IdentifierWASM(dataContractId).bytes(), tokenContractPosition, recipient._rawOrchardAddress, amount.toString(), memo.toBytes(), senderOvk, identityPublicKey.bytes(), privateKey.bytes(), identityContractNonce.toString(), userFeeIncrease, platformVersion));
+        return await this._rawShieldedBuilder.tokenShield(tokenId, ownerId, dataContractId, tokenContractPosition, recipient._rawOrchardAddress, amountString(amount), memo, senderOvk, identityPublicKey, privateKey, amountString(identityContractNonce), userFeeIncrease, version(platformVersion));
     }
-    /** Token shielded pool -> `recipientId`'s token balance, signed with `identityPublicKey` **/
     async tokenUnshield(tokenId, ownerId, dataContractId, tokenContractPosition, spends, recipientId, amount, changeAddress, seed, coinType, account, anchor, memo, identityPublicKey, privateKey, identityContractNonce, userFeeIncrease, platformVersion) {
-        return StateTransitionWASM.fromBytes(await this._rawShieldedBuilder.tokenUnshield(new IdentifierWASM(tokenId).bytes(), new IdentifierWASM(ownerId).bytes(), new IdentifierWASM(dataContractId).bytes(), tokenContractPosition, spends.map(s => s._rawSpendableNote), new IdentifierWASM(recipientId).bytes(), amount.toString(), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo.toBytes(), identityPublicKey.bytes(), privateKey.bytes(), identityContractNonce.toString(), userFeeIncrease, platformVersion));
+        return await this._rawShieldedBuilder.tokenUnshield(tokenId, ownerId, dataContractId, tokenContractPosition, spends.map(s => s._rawSpendableNote), recipientId, amountString(amount), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo, identityPublicKey, privateKey, amountString(identityContractNonce), userFeeIncrease, version(platformVersion));
     }
-    /** Token shielded pool -> token shielded pool, signed with `identityPublicKey` **/
     async tokenShieldedTransfer(tokenId, ownerId, dataContractId, tokenContractPosition, spends, recipient, transferAmount, changeAddress, seed, coinType, account, anchor, memo, identityPublicKey, privateKey, identityContractNonce, userFeeIncrease, platformVersion) {
-        return StateTransitionWASM.fromBytes(await this._rawShieldedBuilder.tokenShieldedTransfer(new IdentifierWASM(tokenId).bytes(), new IdentifierWASM(ownerId).bytes(), new IdentifierWASM(dataContractId).bytes(), tokenContractPosition, spends.map(s => s._rawSpendableNote), recipient._rawOrchardAddress, transferAmount.toString(), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo.toBytes(), identityPublicKey.bytes(), privateKey.bytes(), identityContractNonce.toString(), userFeeIncrease, platformVersion));
+        return await this._rawShieldedBuilder.tokenShieldedTransfer(tokenId, ownerId, dataContractId, tokenContractPosition, spends.map(s => s._rawSpendableNote), recipient._rawOrchardAddress, amountString(transferAmount), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo, identityPublicKey, privateKey, amountString(identityContractNonce), userFeeIncrease, version(platformVersion));
     }
-    /** New tokens minted into the token shielded pool; pass `usingGroupInfo` for a group action **/
     async tokenMintToPool(tokenId, ownerId, dataContractId, tokenContractPosition, recipient, amount, memo, senderOvk, publicNote, usingGroupInfo, identityPublicKey, privateKey, identityContractNonce, userFeeIncrease, platformVersion) {
-        return StateTransitionWASM.fromBytes(await this._rawShieldedBuilder.tokenMintToPool(new IdentifierWASM(tokenId).bytes(), new IdentifierWASM(ownerId).bytes(), new IdentifierWASM(dataContractId).bytes(), tokenContractPosition, recipient._rawOrchardAddress, amount.toString(), memo.toBytes(), senderOvk, publicNote, usingGroupInfo?.bytes(), identityPublicKey.bytes(), privateKey.bytes(), identityContractNonce.toString(), userFeeIncrease, platformVersion));
+        return await this._rawShieldedBuilder.tokenMintToPool(tokenId, ownerId, dataContractId, tokenContractPosition, recipient._rawOrchardAddress, amountString(amount), memo, senderOvk, publicNote, usingGroupInfo, identityPublicKey, privateKey, amountString(identityContractNonce), userFeeIncrease, version(platformVersion));
     }
-    /** Tokens burned out of the token shielded pool; pass `usingGroupInfo` for a group action **/
     async tokenBurnFromPool(tokenId, ownerId, dataContractId, tokenContractPosition, spends, amount, changeAddress, seed, coinType, account, anchor, memo, publicNote, usingGroupInfo, identityPublicKey, privateKey, identityContractNonce, userFeeIncrease, platformVersion) {
-        return StateTransitionWASM.fromBytes(await this._rawShieldedBuilder.tokenBurnFromPool(new IdentifierWASM(tokenId).bytes(), new IdentifierWASM(ownerId).bytes(), new IdentifierWASM(dataContractId).bytes(), tokenContractPosition, spends.map(s => s._rawSpendableNote), amount.toString(), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo.toBytes(), publicNote, usingGroupInfo?.bytes(), identityPublicKey.bytes(), privateKey.bytes(), identityContractNonce.toString(), userFeeIncrease, platformVersion));
+        return await this._rawShieldedBuilder.tokenBurnFromPool(tokenId, ownerId, dataContractId, tokenContractPosition, spends.map(s => s._rawSpendableNote), amountString(amount), changeAddress._rawOrchardAddress, seed, coinType, account, anchor, memo, publicNote, usingGroupInfo, identityPublicKey, privateKey, amountString(identityContractNonce), userFeeIncrease, version(platformVersion));
     }
-    /** A token distribution claimed into the token shielded pool; a perpetual claim must pass `claimUpTo` **/
     async tokenClaimToPool(tokenId, ownerId, dataContractId, tokenContractPosition, recipient, amount, distributionType, claimUpTo, memo, senderOvk, publicNote, identityPublicKey, privateKey, identityContractNonce, userFeeIncrease, platformVersion) {
-        return StateTransitionWASM.fromBytes(await this._rawShieldedBuilder.tokenClaimToPool(new IdentifierWASM(tokenId).bytes(), new IdentifierWASM(ownerId).bytes(), new IdentifierWASM(dataContractId).bytes(), tokenContractPosition, recipient._rawOrchardAddress, amount.toString(), distributionType, claimUpTo?.toString(), memo.toBytes(), senderOvk, publicNote, identityPublicKey.bytes(), privateKey.bytes(), identityContractNonce.toString(), userFeeIncrease, platformVersion));
+        return await this._rawShieldedBuilder.tokenClaimToPool(tokenId, ownerId, dataContractId, tokenContractPosition, recipient._rawOrchardAddress, amountString(amount), distributionType, claimUpTo == null ? claimUpTo : amountString(claimUpTo), memo, senderOvk, publicNote, identityPublicKey, privateKey, amountString(identityContractNonce), userFeeIncrease, version(platformVersion));
     }
-    /** Tokens bought at their direct purchase price into the token shielded pool **/
     async tokenDirectPurchaseToPool(tokenId, ownerId, dataContractId, tokenContractPosition, recipient, tokenCount, totalAgreedPrice, memo, senderOvk, identityPublicKey, privateKey, identityContractNonce, userFeeIncrease, platformVersion) {
-        return StateTransitionWASM.fromBytes(await this._rawShieldedBuilder.tokenDirectPurchaseToPool(new IdentifierWASM(tokenId).bytes(), new IdentifierWASM(ownerId).bytes(), new IdentifierWASM(dataContractId).bytes(), tokenContractPosition, recipient._rawOrchardAddress, tokenCount.toString(), totalAgreedPrice.toString(), memo.toBytes(), senderOvk, identityPublicKey.bytes(), privateKey.bytes(), identityContractNonce.toString(), userFeeIncrease, platformVersion));
+        return await this._rawShieldedBuilder.tokenDirectPurchaseToPool(tokenId, ownerId, dataContractId, tokenContractPosition, recipient._rawOrchardAddress, amountString(tokenCount), amountString(totalAgreedPrice), memo, senderOvk, identityPublicKey, privateKey, amountString(identityContractNonce), userFeeIncrease, version(platformVersion));
     }
-    /**
-     * Tokens move inside the token shielded pool, the fee is paid from the credit shielded
-     * pool (no identity signs). Token and fee notes are spent with the same seed account, each
-     * against its own pool's anchor. Resolves with the transition and its fee
-     **/
     async tokenShieldedTransferWithShieldedFee(tokenId, dataContractId, tokenContractPosition, tokenSpends, tokenChangeAddress, tokenAnchor, recipient, transferAmount, feeSpends, feeChangeAddress, feeAnchor, seed, coinType, account, memo, platformVersion) {
-        return ShieldedWithdrawalResultWASM.createFromRawInstance(await this._rawShieldedBuilder.tokenShieldedTransferWithShieldedFee(new IdentifierWASM(tokenId).bytes(), new IdentifierWASM(dataContractId).bytes(), tokenContractPosition, tokenSpends.map(s => s._rawSpendableNote), tokenChangeAddress._rawOrchardAddress, tokenAnchor, recipient._rawOrchardAddress, transferAmount.toString(), feeSpends.map(s => s._rawSpendableNote), feeChangeAddress._rawOrchardAddress, feeAnchor, seed, coinType, account, memo.toBytes(), platformVersion));
+        return new ShieldedWithdrawalResult(await this._rawShieldedBuilder.tokenShieldedTransferWithShieldedFee(tokenId, dataContractId, tokenContractPosition, tokenSpends.map(s => s._rawSpendableNote), tokenChangeAddress._rawOrchardAddress, tokenAnchor, recipient._rawOrchardAddress, amountString(transferAmount), feeSpends.map(s => s._rawSpendableNote), feeChangeAddress._rawOrchardAddress, feeAnchor, seed, coinType, account, memo, version(platformVersion)));
     }
-    /**
-     * Tokens leave the token shielded pool for `recipientId`'s balance, the fee is paid from the
-     * credit shielded pool. Resolves with the transition and its fee
-     **/
     async tokenUnshieldWithShieldedFee(tokenId, dataContractId, tokenContractPosition, tokenSpends, tokenChangeAddress, tokenAnchor, recipientId, amount, feeSpends, feeChangeAddress, feeAnchor, seed, coinType, account, memo, platformVersion) {
-        return ShieldedWithdrawalResultWASM.createFromRawInstance(await this._rawShieldedBuilder.tokenUnshieldWithShieldedFee(new IdentifierWASM(tokenId).bytes(), new IdentifierWASM(dataContractId).bytes(), tokenContractPosition, tokenSpends.map(s => s._rawSpendableNote), tokenChangeAddress._rawOrchardAddress, tokenAnchor, new IdentifierWASM(recipientId).bytes(), amount.toString(), feeSpends.map(s => s._rawSpendableNote), feeChangeAddress._rawOrchardAddress, feeAnchor, seed, coinType, account, memo.toBytes(), platformVersion));
+        return new ShieldedWithdrawalResult(await this._rawShieldedBuilder.tokenUnshieldWithShieldedFee(tokenId, dataContractId, tokenContractPosition, tokenSpends.map(s => s._rawSpendableNote), tokenChangeAddress._rawOrchardAddress, tokenAnchor, recipientId, amountString(amount), feeSpends.map(s => s._rawSpendableNote), feeChangeAddress._rawOrchardAddress, feeAnchor, seed, coinType, account, memo, version(platformVersion)));
     }
-    /**
-     * Tokens bought at their direct purchase price into the token shielded pool, price and fee
-     * paid from the credit shielded pool. `recipient` must belong to the seed account.
-     * Resolves with the transition and its fee
-     **/
     async tokenPurchaseFromShieldedPool(tokenId, dataContractId, tokenContractPosition, recipient, tokenCount, totalAgreedPrice, feeSpends, feeChangeAddress, feeAnchor, seed, coinType, account, memo, platformVersion) {
-        return ShieldedWithdrawalResultWASM.createFromRawInstance(await this._rawShieldedBuilder.tokenPurchaseFromShieldedPool(new IdentifierWASM(tokenId).bytes(), new IdentifierWASM(dataContractId).bytes(), tokenContractPosition, recipient._rawOrchardAddress, tokenCount.toString(), totalAgreedPrice.toString(), feeSpends.map(s => s._rawSpendableNote), feeChangeAddress._rawOrchardAddress, feeAnchor, seed, coinType, account, memo.toBytes(), platformVersion));
+        return new ShieldedWithdrawalResult(await this._rawShieldedBuilder.tokenPurchaseFromShieldedPool(tokenId, dataContractId, tokenContractPosition, recipient._rawOrchardAddress, amountString(tokenCount), amountString(totalAgreedPrice), feeSpends.map(s => s._rawSpendableNote), feeChangeAddress._rawOrchardAddress, feeAnchor, seed, coinType, account, memo, version(platformVersion)));
     }
 }

@@ -1,10 +1,10 @@
-import { dppProvider } from '../../provider.js';
+import { shieldedProvider } from '../../provider.js';
 import { MerklePathWASM } from './MerklePath.js';
 export class CommitmentTreeWASM {
     /** @private **/
     _rawCommitmentTree;
     constructor(maxCheckpoints) {
-        this._rawCommitmentTree = new dppProvider.shielded.CommitmentTreeNAPI(maxCheckpoints);
+        this._rawCommitmentTree = new shieldedProvider.shielded.CommitmentTreeNAPI(maxCheckpoints);
     }
     /** Appends a note commitment (cmx). `marked` = spendable (can be witnessed). */
     append(cmx, marked) {

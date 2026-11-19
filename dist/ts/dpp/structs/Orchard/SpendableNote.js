@@ -1,11 +1,11 @@
-import { dppProvider } from '../../provider.js';
+import { shieldedProvider } from '../../provider.js';
 import { NoteWASM } from './Note.js';
 import { MerklePathWASM } from './MerklePath.js';
 export class SpendableNoteWASM {
     /** @private **/
     _rawSpendableNote;
     constructor(note, merklePath) {
-        this._rawSpendableNote = new dppProvider.shielded.SpendableNoteNAPI(note._rawNote, merklePath._rawMerklePath);
+        this._rawSpendableNote = new shieldedProvider.shielded.SpendableNoteNAPI(note._rawNote, merklePath._rawMerklePath);
     }
     get note() {
         return NoteWASM.createFromRawInstance(this._rawSpendableNote.note);

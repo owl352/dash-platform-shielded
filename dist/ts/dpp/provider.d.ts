@@ -1,17 +1,15 @@
-import type { DashPlatformProtocol } from 'pshenmic-dpp';
 import type { ShieldedProtocol } from '../napi.js';
-declare class DppProvider {
+/**
+ * Provider for this package's own proving NAPI surface. There is no dpp here:
+ * the shielded module is completely independent.
+ */
+declare class ShieldedProvider {
     private static instance?;
     private _shielded;
     private constructor();
-    static getInstance(): DppProvider;
-    get dpp(): DashPlatformProtocol;
+    static getInstance(): ShieldedProvider;
     get hasShielded(): boolean;
-    /**
-     * The proving (Orchard/Halo 2) NAPI surface owned by this package. Loaded on
-     * first access so the lazy entry stays deferred.
-     */
     get shielded(): ShieldedProtocol;
 }
-export declare const dppProvider: DppProvider;
+export declare const shieldedProvider: ShieldedProvider;
 export {};

@@ -1,6 +1,5 @@
 import type { RecoveredNoteNAPI } from 'dash-platform-shielded/bindingsTypes';
 import { NoteWASM } from './Note.js';
-import { SerializedActionWASM } from 'pshenmic-dpp';
 /** A note recovered from a shielded action by trial-decryption. */
 export declare class RecoveredNoteWASM {
     /** @private **/
@@ -16,4 +15,4 @@ export declare class RecoveredNoteWASM {
  * each with the viewing key derived from `seed` (ZIP-32 m/32'/coinType'/account').
  * Only actions addressed to you are returned; `index` is the global leaf position.
  */
-export declare function recoverNotes(actions: SerializedActionWASM[], seed: Uint8Array, coinType: number, account: number): RecoveredNoteWASM[];
+export declare function recoverNotes(actions: Uint8Array[], seed: Uint8Array, coinType: number, account: number): RecoveredNoteWASM[];

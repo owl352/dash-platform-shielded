@@ -1,4 +1,4 @@
-import { dppProvider } from '../../provider.js';
+import { shieldedProvider } from '../../provider.js';
 import { valueToShieldedDynamicValue } from '../../utils.js';
 import { IncomingViewingKeyWASM } from './IncomingViewingKey.js';
 import { OrchardAddressWASM } from './OrchardAddress.js';
@@ -31,11 +31,11 @@ export class FullViewingKeyWASM {
     }
     /** Derives the full viewing key from a BIP-39 seed via ZIP-32 (m/32'/coinType'/account'). */
     static fromSeed(seed, coinType, account) {
-        return FullViewingKeyWASM.createFromRawInstance(dppProvider.shielded.FullViewingKeyNAPI.fromSeed(seed, coinType, account));
+        return FullViewingKeyWASM.createFromRawInstance(shieldedProvider.shielded.FullViewingKeyNAPI.fromSeed(seed, coinType, account));
     }
     /** Parses a full viewing key from its 96-byte raw encoding. */
     static fromBytes(bytes) {
-        return FullViewingKeyWASM.createFromRawInstance(dppProvider.shielded.FullViewingKeyNAPI.fromBytes(bytes));
+        return FullViewingKeyWASM.createFromRawInstance(shieldedProvider.shielded.FullViewingKeyNAPI.fromBytes(bytes));
     }
     static createFromRawInstance(rawInstance) {
         const instance = Object.create(FullViewingKeyWASM.prototype);

@@ -1,23 +1,18 @@
 import type { ShieldedOutputNAPI } from 'dash-platform-shielded/bindingsTypes';
 import { OrchardAddressWASM } from './OrchardAddress.js';
-import { ShieldedMemoWASM } from './ShieldedMemo.js';
 /**
  * One output of a multi-output shielded transfer (`shieldedTransferMulti`):
- * who receives the note, how much, and the memo carried inside it.
- *
- * Each output holds its own memo — the single-recipient builders share one memo
- * across the bundle, which has nothing sensible to say when there are several
- * unrelated recipients.
+ * who receives the note, how much, and the memo bytes carried inside it.
  */
 export declare class ShieldedOutputWASM {
     /** @private **/
     _rawShieldedOutput: ShieldedOutputNAPI;
-    constructor(address: OrchardAddressWASM, amount: bigint, memo: ShieldedMemoWASM);
+    constructor(address: OrchardAddressWASM, amount: bigint, memo: Uint8Array);
     get address(): OrchardAddressWASM;
     set address(value: OrchardAddressWASM);
     get amount(): bigint;
     set amount(value: bigint);
-    get memo(): ShieldedMemoWASM;
-    set memo(value: ShieldedMemoWASM);
+    get memo(): Uint8Array;
+    set memo(value: Uint8Array);
     static createFromRawInstance(rawInstance: ShieldedOutputNAPI): ShieldedOutputWASM;
 }

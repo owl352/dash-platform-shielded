@@ -1,4 +1,4 @@
-import { dppProvider } from '../../provider.js';
+import { shieldedProvider } from '../../provider.js';
 /**
  * Reusable Orchard prover holding the Halo 2 proving key. Building it is
  * expensive (~seconds); construct once and reuse. (The `ShieldedBuilderWASM`
@@ -21,7 +21,7 @@ export class OrchardProverWASM {
     }
     async init() {
         if (OrchardProverWASM._initPromise == null) {
-            OrchardProverWASM._initPromise = dppProvider.shielded.OrchardProverNAPI.init()
+            OrchardProverWASM._initPromise = shieldedProvider.shielded.OrchardProverNAPI.init()
                 .catch((e) => {
                 OrchardProverWASM._initPromise = null;
                 throw e;

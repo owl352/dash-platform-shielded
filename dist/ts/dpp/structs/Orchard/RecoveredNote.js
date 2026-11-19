@@ -1,4 +1,4 @@
-import { dppProvider } from '../../provider.js';
+import { shieldedProvider } from '../../provider.js';
 import { NoteWASM } from './Note.js';
 /** A note recovered from a shielded action by trial-decryption. */
 export class RecoveredNoteWASM {
@@ -26,9 +26,8 @@ export class RecoveredNoteWASM {
  * Only actions addressed to you are returned; `index` is the global leaf position.
  */
 export function recoverNotes(actions, seed, coinType, account) {
-    // Actions are base-kept: they cross into the shielded instance as consensus
-    // bytes, never as wrapped napi objects (per-Env wrap maps don't share).
-    return dppProvider.shielded
-        .recoverNotes(actions.map(a => a.bytes()), seed, coinType, account)
+    // Actions cross as consensus bytes; this package does not depend on dpp.
+    return shieldedProvider.shielded
+        .recoverNotes(actions, seed, coinType, account)
         .map(RecoveredNoteWASM.createFromRawInstance);
 }

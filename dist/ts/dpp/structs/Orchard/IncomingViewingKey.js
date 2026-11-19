@@ -1,4 +1,4 @@
-import { dppProvider } from '../../provider.js';
+import { shieldedProvider } from '../../provider.js';
 import { valueToShieldedDynamicValue } from '../../utils.js';
 import { OrchardAddressWASM } from './OrchardAddress.js';
 /**
@@ -26,15 +26,15 @@ export class IncomingViewingKeyWASM {
      * (m/32'/coinType'/account') for the given scope (default External).
      */
     static fromSeed(seed, coinType, account, scope) {
-        return IncomingViewingKeyWASM.createFromRawInstance(dppProvider.shielded.IncomingViewingKeyNAPI.fromSeed(seed, coinType, account, scope == null ? undefined : valueToShieldedDynamicValue(scope)));
+        return IncomingViewingKeyWASM.createFromRawInstance(shieldedProvider.shielded.IncomingViewingKeyNAPI.fromSeed(seed, coinType, account, scope == null ? undefined : valueToShieldedDynamicValue(scope)));
     }
     /** Derives the incoming viewing key from a full viewing key (default External scope). */
     static fromFullViewingKey(fullViewingKey, scope) {
-        return IncomingViewingKeyWASM.createFromRawInstance(dppProvider.shielded.IncomingViewingKeyNAPI.fromFullViewingKey(fullViewingKey._rawFullViewingKey, scope == null ? undefined : valueToShieldedDynamicValue(scope)));
+        return IncomingViewingKeyWASM.createFromRawInstance(shieldedProvider.shielded.IncomingViewingKeyNAPI.fromFullViewingKey(fullViewingKey._rawFullViewingKey, scope == null ? undefined : valueToShieldedDynamicValue(scope)));
     }
     /** Parses an incoming viewing key from its 64-byte raw encoding. */
     static fromBytes(bytes) {
-        return IncomingViewingKeyWASM.createFromRawInstance(dppProvider.shielded.IncomingViewingKeyNAPI.fromBytes(bytes));
+        return IncomingViewingKeyWASM.createFromRawInstance(shieldedProvider.shielded.IncomingViewingKeyNAPI.fromBytes(bytes));
     }
     static createFromRawInstance(rawInstance) {
         const instance = Object.create(IncomingViewingKeyWASM.prototype);
