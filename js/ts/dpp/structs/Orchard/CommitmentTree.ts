@@ -1,5 +1,5 @@
 import type { CommitmentTreeNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { dppProvider } from '../../provider.js'
+import { shieldedProvider } from '../../provider.js'
 import { MerklePathWASM } from './MerklePath.js'
 
 export class CommitmentTreeWASM {
@@ -7,7 +7,7 @@ export class CommitmentTreeWASM {
   _rawCommitmentTree: CommitmentTreeNAPI
 
   constructor (maxCheckpoints?: number) {
-    this._rawCommitmentTree = new dppProvider.shielded.CommitmentTreeNAPI(maxCheckpoints)
+    this._rawCommitmentTree = new shieldedProvider.shielded.CommitmentTreeNAPI(maxCheckpoints)
   }
 
   /** Appends a note commitment (cmx). `marked` = spendable (can be witnessed). */

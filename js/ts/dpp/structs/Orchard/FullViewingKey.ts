@@ -1,5 +1,5 @@
 import type { FullViewingKeyNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { dppProvider } from '../../provider.js'
+import { shieldedProvider } from '../../provider.js'
 import { ScopeLike } from '../../types.js'
 import { valueToShieldedDynamicValue } from '../../utils.js'
 import { IncomingViewingKeyWASM } from './IncomingViewingKey.js'
@@ -48,14 +48,14 @@ export class FullViewingKeyWASM {
   /** Derives the full viewing key from a BIP-39 seed via ZIP-32 (m/32'/coinType'/account'). */
   static fromSeed (seed: Uint8Array, coinType: number, account: number): FullViewingKeyWASM {
     return FullViewingKeyWASM.createFromRawInstance(
-      dppProvider.shielded.FullViewingKeyNAPI.fromSeed(seed, coinType, account)
+      shieldedProvider.shielded.FullViewingKeyNAPI.fromSeed(seed, coinType, account)
     )
   }
 
   /** Parses a full viewing key from its 96-byte raw encoding. */
   static fromBytes (bytes: Uint8Array): FullViewingKeyWASM {
     return FullViewingKeyWASM.createFromRawInstance(
-      dppProvider.shielded.FullViewingKeyNAPI.fromBytes(bytes)
+      shieldedProvider.shielded.FullViewingKeyNAPI.fromBytes(bytes)
     )
   }
 

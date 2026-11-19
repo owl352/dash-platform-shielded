@@ -1,12 +1,12 @@
 import type { MerklePathNAPI } from 'dash-platform-shielded/bindingsTypes'
-import { dppProvider } from '../../provider.js'
+import { shieldedProvider } from '../../provider.js'
 
 export class MerklePathWASM {
   /** @private **/
   _rawMerklePath: MerklePathNAPI
 
   constructor (position: number, authPath: Uint8Array[]) {
-    this._rawMerklePath = new dppProvider.shielded.MerklePathNAPI(position, authPath)
+    this._rawMerklePath = new shieldedProvider.shielded.MerklePathNAPI(position, authPath)
   }
 
   get position (): number {

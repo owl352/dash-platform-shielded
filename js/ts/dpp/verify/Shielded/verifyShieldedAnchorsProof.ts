@@ -1,4 +1,4 @@
-import { dppProvider } from '../../provider.js'
+import { shieldedProvider } from '../../provider.js'
 import { IdentifierLike, PlatformVersionLike, VerifiedShieldedAnchors } from '../../types.js'
 import { identifierToBytes, platformVersionToNumber } from '../../utils.js'
 
@@ -9,7 +9,7 @@ export function verifyShieldedAnchorsProof (
   platformVersion: PlatformVersionLike,
   tokenId?: IdentifierLike | null
 ): VerifiedShieldedAnchors {
-  const result = dppProvider.shielded.verifyShieldedAnchorsProof(
+  const result = shieldedProvider.shielded.verifyShieldedAnchorsProof(
     proof,
     verifySubsetOfProof,
     platformVersionToNumber(platformVersion),

@@ -1,4 +1,4 @@
-import { dppProvider } from '../../provider.js'
+import { shieldedProvider } from '../../provider.js'
 import { IdentifierLike, PlatformVersionLike, VerifiedShieldedNullifiers } from '../../types.js'
 import { identifierToBytes, platformVersionToNumber } from '../../utils.js'
 
@@ -10,7 +10,7 @@ export function verifyShieldedNullifiersProof (
   platformVersion: PlatformVersionLike,
   tokenId?: IdentifierLike | null
 ): VerifiedShieldedNullifiers {
-  const result = dppProvider.shielded.verifyShieldedNullifiersProof(
+  const result = shieldedProvider.shielded.verifyShieldedNullifiersProof(
     proof,
     nullifiers,
     verifySubsetOfProof,

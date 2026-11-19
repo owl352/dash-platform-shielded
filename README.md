@@ -30,7 +30,9 @@ wasm elsewhere. Only construct it where proving is available: Node, or a
 cross-origin-isolated browser (the wasm path needs `SharedArrayBuffer`).
 
 The instance exposes the wrappers and verify functions directly, and the raw NAPI
-surface via `.napi`. For deferred loading — non-isolated pages, SSR, tests, or wasm
+surface via `.napi`. The builder is dpp-free: dpp-side inputs cross as bytes
+(`assetLockProof.bytes()`, `privateKey.bytes()`, ...) and it returns the proven
+state transition as `Uint8Array`. For deferred loading — non-isolated pages, SSR, tests, or wasm
 thread workers — use the lazy entry:
 
 ```js
@@ -57,14 +59,13 @@ This crate owns the **complete shielded engine**:
 - the TypeScript wrappers (`js/ts/`: Orchard structs, shielded transitions,
   verify functions).
 
-The proving core is **self-contained**: it serializes the dashpay `dpp` domain
-types directly (`src/orchard/serialize.rs` + `napi_utils.rs`). The TS wrappers
-compose the base `pshenmic-dpp` classes (the package is optional; dpp never
-imports it).
+The package is **completely independent of `pshenmic-dpp`**. The proving core
+serializes the dashpay `dpp` domain types directly (`src/orchard/serialize.rs` +
+`napi_utils.rs`), and the TS wrappers take/return **bytes and primitives** — no
+`pshenmic-dpp` import, no `DppProvider`, no wrapped objects crossing packages.
 
-`pshenmic-dpp` keeps its base protocol and the low-level shielded transition NAPI
-primitives used by its state-transition/batch code. It has no dependency on this
-package and does not re-export it.
+`pshenmic-dpp` keeps its base protocol and its own shielded state-transition
+primitives. It has no dependency on this package and does not re-export it.
 
 ## Layout
 
@@ -119,33 +120,21 @@ regenerates `dist/binaries/bindingsTypes.d.ts`.
 
 ## Testing
 
-Two levels (plain Node scripts — Node provides `SharedArrayBuffer`):
-
 ```sh
-npm test                 # standalone: DashPlatformShielded + lazy loader + wasm/native instantiation + proving-key build (no dpp)
-npm run test:integration # dpp base + shielded wrappers: a REAL shielded transition across the boundary
+npm test   # DashPlatformShielded + lazy loader + wasm/native instantiation + builder/proving-key build
 ```
 
-`test:integration` needs a **built** pshenmic-dpp (`dist/` with the base wasm);
-point `DPP_DIR` at it (default: sibling checkout). It asserts deterministic
-transition fields + byte round-trips (proofs are OsRng-randomized, so literal
-proof bytes are never compared).
-
-Testing strategy for the split: test **each side strictly** — the shielded module
-standalone (real proving), dpp base + the shielded wrappers (the wrappers can be exercised
-against a **mock** shielded NAPI surface, no real proving needed) —
-plus this cross-repo integration test. In browsers, proving additionally needs
-cross-origin isolation (`COOP: same-origin` + `COEP: require-corp`); the dpp e2e
-harness covers the COOP/popup matrix.
+The package is tested standalone, with **no `pshenmic-dpp`** installed. Cross-package
+behavior (dpp wrappers -> bytes -> shielded builder -> state transition) belongs to the
+SDK's integration tests, which compose the two independent modules. In browsers,
+proving additionally needs cross-origin isolation (`COOP: same-origin` + `COEP: require-corp`).
 
 ## Notes
 
-- **Version alignment:** the bytes boundary couples dpp and dash-platform-shielded —
-  release them with matching versions and matching `@emnapi` pins (currently
-  `1.11.3`). The `version` here is a placeholder (`0.0.0`); set it at release.
-- **Wasm size:** the shielded wasm links the dpp base napi helpers (it uses them
-  for serialization), so it is ~8MB (currently 7.99MB — tight headroom under
-  Chrome's limit). The *base* dpp wasm is the small one. Watch the shielded size
-  budget; a future step could gate dpp's napi registration to shrink it.
+- **Independence:** there is no `pshenmic-dpp` dependency; the SDK composes the
+  two modules and converts dpp wrappers to bytes. Keep the `@emnapi` pins aligned
+  (`1.11.3`) when both are installed. The `version` here is a placeholder
+  (`0.0.0`); set it at release.
+- **Wasm size:** the threaded shielded wasm is ~3.84MB.
 - `binaries/`, `dist/`, `target/` are build outputs (gitignored); CI builds them
   before publishing. Do not publish from a stale local `dist/`.

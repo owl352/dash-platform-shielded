@@ -30,8 +30,7 @@
     "build:dist": "node -e \"const fs=require('fs');fs.rmSync('dist/src',{recursive:true,force:true});fs.cpSync('js/src','dist/src',{recursive:true});fs.cpSync('js/binaries','dist/binaries',{recursive:true})\"",
     "build:typings": "node utils/genTypings.mjs",
     "test": "node test/standalone.test.mjs && node test/utility-parity.test.mjs",
-    "test:integration": "node test/integration.test.mjs",
-    "build:ts": "tsc"
+    "build:ts": "node -e \"require('fs').rmSync('dist/ts',{recursive:true,force:true})\" && tsc"
   },
   "repository": {
     "type": "git",
@@ -49,15 +48,6 @@
     "@napi-rs/cli": "^3.0.4",
     "emnapi": "1.11.3",
     "wasm-opt": "^1.4.0",
-    "typescript": "^6.0.3",
-    "pshenmic-dpp": "file:../pshenmic-dpp-new-ark/pshenmic-dpp"
-  },
-  "peerDependencies": {
-    "pshenmic-dpp": ">=3.0.0-dev.0"
-  },
-  "peerDependenciesMeta": {
-    "pshenmic-dpp": {
-      "optional": true
-    }
+    "typescript": "^6.0.3"
   }
 }
