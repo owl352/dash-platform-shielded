@@ -647,7 +647,7 @@ dependencies = [
 
 [[package]]
 name = "dash-platform-shielded"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "async-trait",
  "dpp",
