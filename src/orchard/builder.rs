@@ -2,6 +2,7 @@ use dpp::{
     address_funds::{AddressFundsFeeStrategyStep, OrchardAddress, PlatformAddress},
     fee::Credits,
     identity::IdentityPublicKey,
+    platform_value::BinaryData,
     prelude::{AddressNonce, AssetLockProof},
     shielded::{
         builder::{
@@ -9,6 +10,7 @@ use dpp::{
             TokenPoolSpender, build_document_shielded_token_payment,
             build_identity_create_from_shielded_pool_transition,
             build_identity_top_up_from_shielded_pool_transition,
+            build_private_document_create_from_shielded_pool_transition,
             build_shield_from_asset_lock_transition, build_shield_from_identity_transition,
             build_shield_transition, build_shielded_transfer_transition,
             build_shielded_withdrawal_transition, build_token_burn_from_pool_transition,
@@ -22,7 +24,7 @@ use dpp::{
         },
     },
     state_transition::{StateTransition, public_key_in_creation::IdentityPublicKeyInCreation},
-    version::{PlatformVersion, v14::PLATFORM_V14},
+    version::{PlatformVersion, v15::PLATFORM_V15},
 };
 use grovedb_commitment_tree::{Anchor, FullViewingKey, OutgoingViewingKey, SpendAuthorizingKey};
 use napi::{
@@ -99,14 +101,14 @@ fn memo_bytes_from_js(js_memo: Uint8Array) -> Result<[u8; 36], napi::Error> {
 }
 
 /// Platform versions cross the boundary as plain numbers; `None` means the
-/// latest version (PLATFORM_V14).
+/// latest version (PLATFORM_V15).
 fn parse_platform_version(
     js_platform_version: Option<u32>,
 ) -> Result<PlatformVersion, napi::Error> {
     js_platform_version
         .map(|version| platform_version_from_u64(u64::from(version)))
         .transpose()
-        .map(|version| version.unwrap_or(PLATFORM_V14))
+        .map(|version| version.unwrap_or(PLATFORM_V15))
 }
 
 fn spendable_notes(js_spends: &[&SpendableNoteNAPI]) -> Vec<SpendableNote> {
@@ -947,6 +949,76 @@ impl ShieldedBuilderNAPI {
                 .with_js_error()?;
 
                 Ok(serialize::token_shielded_payment_to_bytes(&payment)?)
+            }),
+        )
+    }
+
+    /// Builds a `PrivateDocumentCreateFromShieldedPool` transition (protocol v15+): creates
+    /// entries of the private document type `documentTypeName` under `dataContractId`, paying
+    /// the fee from the credit shielded pool. No identity signs; the contract, type name and
+    /// entries are bound into the bundle's sighash.
+    ///
+    /// The fee is not a parameter: consensus pins the bundle's value balance to
+    /// `compute_private_document_create_from_shielded_pool_fee` for the action count and the
+    /// entries' number and size.
+    ///
+    /// - `spends` - notes to spend with their Merkle paths
+    /// - `data_contract_id` - contract owning the private document type (32 bytes)
+    /// - `document_type_name` - the private document type to create entries in
+    /// - `entries` - 1 to 16 entries, all the same size and within the protocol cap
+    /// - `change_address` - Orchard address for the shielded change note
+    /// - `seed` / `coin_type` / `account` - BIP-39 seed + ZIP-32 path for the spend authority
+    /// - `anchor` - 32-byte Sinsemilla root the Merkle paths are witnessed against
+    /// - `platform_version` - protocol version (defaults to the latest)
+    ///
+    /// Returns the proven state transition plus the shielded fee (credits).
+    #[napi(js_name = "privateDocumentCreateFromShieldedPool")]
+    #[allow(clippy::too_many_arguments)]
+    pub fn private_document_create_from_shielded_pool<'env>(
+        &self,
+        env: &'env Env,
+        js_spends: Vec<&SpendableNoteNAPI>,
+        js_data_contract_id: Uint8Array,
+        js_document_type_name: String,
+        js_entries: Vec<Uint8Array>,
+        js_change_address: &OrchardAddressNAPI,
+        js_seed: Uint8Array,
+        js_coin_type: u32,
+        js_account: u32,
+        js_anchor: Uint8Array,
+        js_platform_version: Option<u32>,
+    ) -> Result<PromiseRaw<'env, ShieldedWithdrawalResultNAPI>, napi::Error> {
+        let spends = spendable_notes(&js_spends);
+        let data_contract_id = parse_identifier(js_data_contract_id)?;
+        let entries: Vec<BinaryData> = js_entries
+            .into_iter()
+            .map(|entry| BinaryData::new(entry.to_vec()))
+            .collect();
+        let change_address: OrchardAddress = js_change_address.into();
+        let (fvk, ask) = spend_authority_from_seed(js_seed.as_ref(), js_coin_type, js_account)?;
+        let anchor = parse_anchor(&js_anchor)?;
+        let platform_version: PlatformVersion = parse_platform_version(js_platform_version)?;
+        let prover = self.proover.shared();
+
+        spawn_proving(
+            env,
+            Box::pin(async move {
+                let (state_transition, fee) =
+                    build_private_document_create_from_shielded_pool_transition(
+                        spends,
+                        data_contract_id,
+                        js_document_type_name,
+                        entries,
+                        &change_address,
+                        &fvk,
+                        &ask,
+                        anchor,
+                        &prover,
+                        &platform_version,
+                    )
+                    .with_js_error()?;
+
+                Ok(ShieldedWithdrawalResultNAPI::new(state_transition, fee)?)
             }),
         )
     }

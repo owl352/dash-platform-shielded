@@ -340,6 +340,32 @@ export class ShieldedBuilderWASM {
     )
   }
 
+  async privateDocumentCreateFromShieldedPool (
+    spends: SpendableNoteWASM[],
+    dataContractId: Uint8Array,
+    documentTypeName: string,
+    entries: Uint8Array[],
+    changeAddress: OrchardAddressWASM,
+    seed: Uint8Array,
+    coinType: number,
+    account: number,
+    anchor: Uint8Array,
+    platformVersion?: PlatformVersionLike
+  ): Promise<ShieldedWithdrawalResult> {
+    return new ShieldedWithdrawalResult(await this._rawShieldedBuilder.privateDocumentCreateFromShieldedPool(
+      spends.map(s => s._rawSpendableNote),
+      dataContractId,
+      documentTypeName,
+      entries,
+      changeAddress._rawOrchardAddress,
+      seed,
+      coinType,
+      account,
+      anchor,
+      version(platformVersion)
+    ))
+  }
+
   async tokenShield (
     tokenId: Uint8Array,
     ownerId: Uint8Array,

@@ -5,8 +5,8 @@ use dpp::{
     ProtocolError,
     address_funds::{AddressWitness, PlatformAddress},
     dashcore::{
-        hashes::{Hash, hash160},
-        secp256k1::{PublicKey, Secp256k1, SecretKey},
+        Network, PrivateKey,
+        hashes::hash160,
         signer,
     },
     identity::{
@@ -32,21 +32,22 @@ impl AddressKeySigner {
     /// here without a network (which only affects WIF encoding, not signing).
     pub fn from_private_keys(private_keys: &[Uint8Array]) -> Result<Self, napi::Error> {
         let mut keys = BTreeMap::new();
-        let secp = Secp256k1::new();
 
         for pk in private_keys {
             let secret: [u8; 32] = pk.to_vec().as_slice().try_into().map_err(|_| {
                 napi::Error::new(napi::Status::InvalidArg, "private key must be 32 bytes")
             })?;
 
-            let secret_key = SecretKey::from_slice(&secret).map_err(|e| {
-                napi::Error::new(
-                    napi::Status::InvalidArg,
-                    format!("invalid private key: {e}"),
-                )
-            })?;
-            let public_key = PublicKey::from_secret_key(&secp, &secret_key);
-            let hash: [u8; 20] = hash160::Hash::hash(&public_key.serialize()).to_byte_array();
+            // Network only affects WIF encoding, not the key itself or its hash.
+            let secret_key =
+                PrivateKey::from_byte_array(&secret, Network::Mainnet).map_err(|e| {
+                    napi::Error::new(
+                        napi::Status::InvalidArg,
+                        format!("invalid private key: {e}"),
+                    )
+                })?;
+            let public_key = secret_key.public_key();
+            let hash: [u8; 20] = hash160::Hash::hash(&public_key.to_bytes()).to_byte_array();
 
             keys.insert(hash, secret);
         }
