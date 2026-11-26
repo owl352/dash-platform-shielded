@@ -1,6 +1,6 @@
 {
   "name": "dash-platform-shielded",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Shielded (Orchard/Halo 2) module for dash-platform-sdk: proving, Orchard wrappers, and shielded-pool verification",
   "type": "module",
   "main": "dist/src/index.js",
