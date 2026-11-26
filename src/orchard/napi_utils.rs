@@ -13,7 +13,7 @@ use dpp::{
         PlatformVersion, v1::PLATFORM_V1, v2::PLATFORM_V2, v3::PLATFORM_V3, v4::PLATFORM_V4,
         v5::PLATFORM_V5, v6::PLATFORM_V6, v7::PLATFORM_V7, v8::PLATFORM_V8, v9::PLATFORM_V9,
         v10::PLATFORM_V10, v11::PLATFORM_V11, v12::PLATFORM_V12, v13::PLATFORM_V13,
-        v14::PLATFORM_V14,
+        v14::PLATFORM_V14, v15::PLATFORM_V15,
     },
     withdrawal::Pooling,
 };
@@ -653,7 +653,7 @@ pub fn distribution_type_from_u64(value: u64) -> Result<TokenDistributionType, n
     }
 }
 
-/// Platform version from its JS numeric form (1..=14); anything else is an
+/// Platform version from its JS numeric form (1..=15); anything else is an
 /// error, exactly like the old `PlatformVersionNAPI::try_from(u64)`.
 pub fn platform_version_from_u64(value: u64) -> Result<PlatformVersion, napi::Error> {
     match value {
@@ -671,6 +671,7 @@ pub fn platform_version_from_u64(value: u64) -> Result<PlatformVersion, napi::Er
         12 => Ok(PLATFORM_V12),
         13 => Ok(PLATFORM_V13),
         14 => Ok(PLATFORM_V14),
+        15 => Ok(PLATFORM_V15),
         _ => Err(napi::Error::new(
             Status::InvalidArg,
             format!("unknown platform version value: {}", value),
