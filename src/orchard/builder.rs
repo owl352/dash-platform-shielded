@@ -987,7 +987,7 @@ impl ShieldedBuilderNAPI {
         js_account: u32,
         js_anchor: Uint8Array,
         js_platform_version: Option<u32>,
-    ) -> Result<PromiseRaw<'env, ShieldedWithdrawalResultNAPI>, napi::Error> {
+    ) -> Result<PromiseRaw<'env, PrivateDocumentCreateFromShieldedPoolResultNAPI>, napi::Error> {
         let spends = spendable_notes(&js_spends);
         let data_contract_id = parse_identifier(js_data_contract_id)?;
         let entries: Vec<BinaryData> = js_entries
@@ -1018,7 +1018,10 @@ impl ShieldedBuilderNAPI {
                     )
                     .with_js_error()?;
 
-                Ok(ShieldedWithdrawalResultNAPI::new(state_transition, fee)?)
+                Ok(PrivateDocumentCreateFromShieldedPoolResultNAPI::new(
+                    state_transition,
+                    fee,
+                )?)
             }),
         )
     }
@@ -1807,6 +1810,23 @@ pub struct ShieldedWithdrawalResultNAPI {
 impl ShieldedWithdrawalResultNAPI {
     fn new(state_transition: StateTransition, fee: u64) -> Result<Self, napi::Error> {
         Ok(ShieldedWithdrawalResultNAPI {
+            state_transition: serialize::state_transition_to_bytes(&state_transition)?,
+            fee: BigIntString::from_u64(fee),
+        })
+    }
+}
+
+/// Result of [`ShieldedBuilderNAPI::private_document_create_from_shielded_pool`]: the
+/// proven private-document transition plus the shielded fee (credits) consensus charges.
+#[napi(object, js_name = "PrivateDocumentCreateFromShieldedPoolResultNAPI")]
+pub struct PrivateDocumentCreateFromShieldedPoolResultNAPI {
+    pub state_transition: Uint8Array,
+    pub fee: BigIntString,
+}
+
+impl PrivateDocumentCreateFromShieldedPoolResultNAPI {
+    fn new(state_transition: StateTransition, fee: u64) -> Result<Self, napi::Error> {
+        Ok(PrivateDocumentCreateFromShieldedPoolResultNAPI {
             state_transition: serialize::state_transition_to_bytes(&state_transition)?,
             fee: BigIntString::from_u64(fee),
         })

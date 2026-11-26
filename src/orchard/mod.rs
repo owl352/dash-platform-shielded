@@ -7,6 +7,7 @@ pub mod note;
 pub mod note_recovery;
 pub mod orchard_address;
 pub mod proover;
+pub mod private_document;
 pub mod serialize;
 pub mod shielded_output;
 pub mod signer;
