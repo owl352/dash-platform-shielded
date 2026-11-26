@@ -5,11 +5,18 @@ export { NoteWASM } from './orchard/Note.js'
 export { MerklePathWASM } from './orchard/MerklePath.js'
 export { SpendableNoteWASM } from './orchard/SpendableNote.js'
 export { ShieldedOutputWASM } from './orchard/ShieldedOutput.js'
+export {
+  openPrivateDocumentEntry,
+  recoverSentPrivateDocumentEntry,
+  sealPrivateDocumentEntry
+} from './orchard/PrivateDocument.js'
+export type { PrivateDocumentSenderAuth } from './orchard/PrivateDocument.js'
 export { CommitmentTreeWASM } from './orchard/CommitmentTree.js'
 export { OrchardProverWASM } from './orchard/OrchardProver.js'
 export { RecoveredNoteWASM, recoverNotes } from './orchard/RecoveredNote.js'
 export {
   IdentityCreateFromShieldedPoolResult,
+  PrivateDocumentCreateFromShieldedPoolResult,
   ShieldedBuilderWASM,
   ShieldedWithdrawalResult
 } from './orchard/ShieldedBuilder.js'

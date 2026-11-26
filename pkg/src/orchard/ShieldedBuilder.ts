@@ -1,5 +1,6 @@
 import type {
   IdentityCreateFromShieldedPoolResultNAPI,
+  PrivateDocumentCreateFromShieldedPoolResultNAPI,
   ShieldedBuilderNAPI,
   ShieldedWithdrawalResultNAPI
 } from '../../binaries/bindingsTypes.js'
@@ -15,6 +16,16 @@ export class ShieldedWithdrawalResult {
   readonly fee: bigint
 
   constructor (raw: ShieldedWithdrawalResultNAPI) {
+    this.stateTransition = raw.stateTransition
+    this.fee = BigInt(raw.fee)
+  }
+}
+
+export class PrivateDocumentCreateFromShieldedPoolResult {
+  readonly stateTransition: Uint8Array
+  readonly fee: bigint
+
+  constructor (raw: PrivateDocumentCreateFromShieldedPoolResultNAPI) {
     this.stateTransition = raw.stateTransition
     this.fee = BigInt(raw.fee)
   }
@@ -351,8 +362,8 @@ export class ShieldedBuilderWASM {
     account: number,
     anchor: Uint8Array,
     platformVersion?: PlatformVersionLike
-  ): Promise<ShieldedWithdrawalResult> {
-    return new ShieldedWithdrawalResult(await this._rawShieldedBuilder.privateDocumentCreateFromShieldedPool(
+  ): Promise<PrivateDocumentCreateFromShieldedPoolResult> {
+    return new PrivateDocumentCreateFromShieldedPoolResult(await this._rawShieldedBuilder.privateDocumentCreateFromShieldedPool(
       spends.map(s => s._rawSpendableNote),
       dataContractId,
       documentTypeName,
